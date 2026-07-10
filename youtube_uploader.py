@@ -1,0 +1,282 @@
+#!/usr/bin/env python3
+"""
+YouTube Video Uploader - REAL UPLOAD
+Uses Google OAuth2 to upload videos to YouTube channel
+"""
+
+import os
+import json
+import pickle
+from google.auth.transport.requests import Request
+from google.oauth2.credentials import Credentials
+from google_auth_oauthlib.flow import InstalledAppFlow
+from googleapiclient.discovery import build
+from googleapiclient.http import MediaFileUpload
+import requests
+
+# ============================================================================
+# CONFIG
+# ============================================================================
+
+YOUTUBE_SCOPES = ["https://www.googleapis.com/auth/youtube.upload"]
+TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
+TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
+
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+TOKEN_FILE = os.path.join(SCRIPT_DIR, "youtube_token.pickle")
+CREDENTIALS_FILE = os.path.join(SCRIPT_DIR, "google_auth.json")
+
+# ============================================================================
+# TELEGRAM ALERTS
+# ============================================================================
+
+def send_telegram_alert(message: str, emoji: str = "📊"):
+    """Send alert to user via Telegram"""
+    try:
+        url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
+        payload = {"chat_id": TELEGRAM_CHAT_ID, "text": f"{emoji} {message}"}
+        response = requests.post(url, json=payload, timeout=5)
+        if response.status_code == 200:
+            print(f"✅ Telegram: {message}")
+        else:
+            print(f"⚠️ Telegram error: {response.text}")
+    except Exception as e:
+        print(f"⚠️ Telegram failed: {e}")
+
+# ============================================================================
+# YOUTUBE AUTHENTICATION
+# ============================================================================
+
+def get_youtube_service():
+    """Get authenticated YouTube service"""
+    try:
+        creds = None
+        
+        # Try to load existing token
+        if os.path.exists(TOKEN_FILE):
+            with open(TOKEN_FILE, 'rb') as token:
+                creds = pickle.load(token)
+        
+        # If no valid credentials, create new ones
+        if not creds or not creds.valid:
+            if creds and creds.expired and creds.refresh_token:
+                creds.refresh(Request())
+            else:
+                # Use credentials from environment (GitHub Actions)
+                google_auth_json = os.getenv("GOOGLE_AUTH_JSON")
+                
+                if google_auth_json:
+                    # Parse JSON from environment variable
+                    creds_data = json.loads(google_auth_json)
+                    creds = Credentials.from_authorized_user_info(creds_data, YOUTUBE_SCOPES)
+                elif os.path.exists(CREDENTIALS_FILE):
+                    # Use local file if exists
+                    flow = InstalledAppFlow.from_client_secrets_file(
+                        CREDENTIALS_FILE, YOUTUBE_SCOPES)
+                    creds = flow.run_local_server(port=0)
+                else:
+                    print("❌ No credentials found!")
+                    return None
+            
+            # Save token for future use
+            with open(TOKEN_FILE, 'wb') as token:
+                pickle.dump(creds, token)
+        
+        # Build YouTube service
+        youtube = build('youtube', 'v3', credentials=creds)
+        print("✅ YouTube authentication successful")
+        return youtube
+    
+    except Exception as e:
+        print(f"❌ YouTube authentication error: {e}")
+        send_telegram_alert(f"YouTube auth failed: {e}", "❌")
+        return None
+
+# ============================================================================
+# GET CHANNEL ID
+# ============================================================================
+
+def get_channel_id(youtube):
+    """Get authenticated user's YouTube channel ID"""
+    try:
+        request = youtube.channels().list(
+            part="snippet",
+            mine=True
+        )
+        response = request.execute()
+        
+        if response['items']:
+            channel_id = response['items'][0]['id']
+            channel_name = response['items'][0]['snippet']['title']
+            print(f"✅ Channel found: {channel_name} ({channel_id})")
+            return channel_id
+        else:
+            print("❌ No channel found")
+            return None
+    
+    except Exception as e:
+        print(f"❌ Error getting channel ID: {e}")
+        return None
+
+# ============================================================================
+# UPLOAD VIDEO
+# ============================================================================
+
+def upload_video(youtube, video_path: str, title: str, description: str, tags: list, category_id: str = "28"):
+    """Upload video to YouTube"""
+    try:
+        if not os.path.exists(video_path):
+            print(f"❌ Video file not found: {video_path}")
+            send_telegram_alert(f"Video file not found: {video_path}", "❌")
+            return False
+        
+        file_size = os.path.getsize(video_path)
+        print(f"\n📹 Uploading video:")
+        print(f"   Title: {title}")
+        print(f"   File: {video_path}")
+        print(f"   Size: {file_size / (1024*1024):.1f} MB")
+        
+        # Prepare video metadata
+        body = {
+            "snippet": {
+                "title": title,
+                "description": description,
+                "tags": tags,
+                "categoryId": category_id,
+                "defaultLanguage": "en",
+                "defaultAudioLanguage": "en"
+            },
+            "status": {
+                "privacyStatus": "public",
+                "madeForKids": False,
+                "selfDeclaredMadeForKids": False,
+                "embeddable": True
+            }
+        }
+        
+        # Upload with resumable media
+        media = MediaFileUpload(
+            video_path,
+            mimetype="video/mp4",
+            resumable=True,
+            chunksize=10 * 1024 * 1024  # 10 MB chunks
+        )
+        
+        request = youtube.videos().insert(
+            part=",".join(body.keys()),
+            body=body,
+            media_body=media
+        )
+        
+        # Execute upload with progress
+        response = None
+        while response is None:
+            try:
+                status, response = request.next_chunk()
+                if status:
+                    print(f"   📤 Upload progress: {int(status.progress() * 100)}%")
+            except Exception as e:
+                print(f"❌ Upload error: {e}")
+                send_telegram_alert(f"Upload error: {e}", "❌")
+                return False
+        
+        video_id = response['id']
+        video_url = f"https://www.youtube.com/watch?v={video_id}"
+        
+        print(f"✅ Video uploaded successfully!")
+        print(f"   Video ID: {video_id}")
+        print(f"   URL: {video_url}")
+        
+        send_telegram_alert(
+            f"🎬 VIDEO UPLOADED TO YOUTUBE!\n"
+            f"📌 {title}\n"
+            f"🔗 {video_url}",
+            "🎬"
+        )
+        
+        return True
+    
+    except Exception as e:
+        print(f"❌ Upload failed: {e}")
+        send_telegram_alert(f"Upload failed: {e}", "❌")
+        return False
+
+# ============================================================================
+# MAIN - UPLOAD ALL VIDEOS FROM OUTPUT
+# ============================================================================
+
+def upload_all_videos():
+    """Upload all generated videos from output directory"""
+    output_dir = os.path.join(SCRIPT_DIR, "output")
+    
+    if not os.path.exists(output_dir):
+        print("❌ No output directory found")
+        return
+    
+    # Find all .mp4 files
+    videos = [f for f in os.listdir(output_dir) if f.endswith(".mp4")]
+    
+    if not videos:
+        print("⚠️ No videos to upload")
+        return
+    
+    # Authenticate
+    youtube = get_youtube_service()
+    if not youtube:
+        print("❌ Could not authenticate with YouTube")
+        return
+    
+    # Get channel ID
+    channel_id = get_channel_id(youtube)
+    if not channel_id:
+        print("❌ Could not get channel ID")
+        return
+    
+    # Load video metadata
+    metadata_file = os.path.join(output_dir, "videos_log.json")
+    metadata_map = {}
+    if os.path.exists(metadata_file):
+        with open(metadata_file, "r") as f:
+            videos_data = json.load(f)
+            for v in videos_data:
+                metadata_map[v.get("id")] = v
+    
+    # Upload each video
+    uploaded_count = 0
+    for video_file in sorted(videos):
+        try:
+            # Extract video ID from filename
+            video_id = int(video_file.split("_")[1].split(".")[0])
+            
+            # Get metadata
+            metadata = metadata_map.get(video_id, {})
+            title = metadata.get("title", f"Trending Video #{video_id}")
+            description = (
+                f"{metadata.get('trend', 'Trending viral video')}\n\n"
+                "🤖 AI-generated content | Subscribe for daily viral videos!\n"
+                "#viral #trending #shorts #ai #facts"
+            )
+            tags = ["viral", "trending", "AI", "shorts", "facts", "NeuronOv3rload"]
+            
+            video_path = os.path.join(output_dir, video_file)
+            
+            # Upload
+            if upload_video(youtube, video_path, title, description, tags):
+                uploaded_count += 1
+        
+        except Exception as e:
+            print(f"⚠️ Error processing {video_file}: {e}")
+            continue
+    
+    print(f"\n{'='*80}")
+    print(f"✅ Upload complete: {uploaded_count}/{len(videos)} videos uploaded")
+    print(f"{'='*80}")
+    
+    send_telegram_alert(
+        f"✅ Upload batch complete!\n"
+        f"📊 {uploaded_count}/{len(videos)} videos uploaded to YouTube",
+        "✅"
+    )
+
+if __name__ == "__main__":
+    upload_all_videos()
