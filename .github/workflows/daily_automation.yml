@@ -1,4 +1,4 @@
-name: Daily AI Video Automation
+name: Daily AI Video Automation 
 
 on:
   schedule:
