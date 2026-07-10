@@ -92,7 +92,9 @@ def fetch_trending_topics() -> List[Dict]:
 def generate_video_script(trend_topic: Dict) -> str:
     """Generate viral video script using Claude"""
     try:
-        client = Anthropic()
+        from anthropic import Anthropic
+        
+        client = Anthropic(api_key=ANTHROPIC_API_KEY)
         
         prompt = f"""Generate a viral YouTube Shorts script (60-90 seconds) based on this trending topic.
 
@@ -110,7 +112,7 @@ REQUIREMENTS:
 
 Return ONLY the script, no formatting or extra text."""
 
-        message = client.messages.create(
+        response = client.messages.create(
             model="claude-opus-4-6",
             max_tokens=500,
             messages=[
@@ -118,7 +120,7 @@ Return ONLY the script, no formatting or extra text."""
             ]
         )
         
-        script = message.content[0].text.strip()
+        script = response.content[0].text.strip()
         return script if script else None
     
     except Exception as e:
