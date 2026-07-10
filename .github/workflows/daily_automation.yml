@@ -2,8 +2,9 @@ name: Daily AI Video Automation
 
 on:
   schedule:
+    # Run at 9 AM UTC daily
     - cron: '0 9 * * *'
-  workflow_dispatch:
+  workflow_dispatch:  # Allow manual trigger
 
 jobs:
   generate-and-upload:
@@ -40,11 +41,23 @@ jobs:
         run: |
           python ai_video_engine.py
       
-      - name: Notify Telegram
+      - name: Upload videos to YouTube
+        env:
+          GOOGLE_AUTH_JSON: ${{ secrets.GOOGLE_AUTH_JSON }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          python youtube_uploader_real.py
+      
+      - name: Update metrics
+        run: |
+          echo "Metrics updated at $(date)" >> metrics.log
+      
+      - name: Notify completion
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
           curl -X POST https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage \
             -d chat_id=${TELEGRAM_CHAT_ID} \
-            -d text="✅ Automation completed successfully!"
+            -d text="✅ Daily automation completed successfully! Videos uploaded to YouTube."
