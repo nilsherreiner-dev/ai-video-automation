@@ -326,9 +326,14 @@ def run_daily_automation():
             print(f"   ⚠️ Voiceover generation failed, skipping")
             continue
         
-        # Assemble video
+        # Assemble a real, watchable video (branded background + synced captions)
         print("   🎬 Assembling video...")
-        video_file = assemble_video(idx + 1, voiceover)
+        try:
+            from video_builder import build_video
+            video_file = build_video(idx + 1, trend["title"], script, voiceover, OUTPUT_DIR)
+        except Exception as e:
+            print(f"   ⚠️ Video assembly failed: {e}")
+            video_file = None
         
         if not video_file:
             print(f"   ⚠️ Video assembly failed, skipping")
