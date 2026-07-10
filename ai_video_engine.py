@@ -8,7 +8,7 @@ AI Video Automation Engine - COMPLETE VERSION
 - Uploads to YouTube at optimal time (2 PM UTC)
 - Sends Telegram alerts
 """
- 
+
 import os
 import json
 import subprocess
@@ -16,30 +16,30 @@ from datetime import datetime, time
 from typing import Dict, List
 import requests
 from anthropic import Anthropic
- 
+
 # ============================================================================
 # CONFIG
 # ============================================================================
- 
+
 ELEVENLABS_API_KEY = os.getenv("ELEVENLABS_API_KEY")
 NEWSAPI_KEY = os.getenv("NEWSAPI_KEY")
 YOUTUBE_API_KEY = os.getenv("YOUTUBE_API_KEY")
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
- 
+
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 OUTPUT_DIR = os.path.join(SCRIPT_DIR, "output")
 os.makedirs(OUTPUT_DIR, exist_ok=True)
- 
+
 # Optimal upload time: 2 PM UTC (best engagement time)
 OPTIMAL_UPLOAD_HOUR = 14  # 2 PM in 24h format
 OPTIMAL_UPLOAD_MINUTE = 0
- 
+
 # ============================================================================
 # TELEGRAM ALERTS
 # ============================================================================
- 
+
 def send_telegram_alert(message: str, emoji: str = "📊"):
     """Send alert to user via Telegram"""
     try:
@@ -52,11 +52,11 @@ def send_telegram_alert(message: str, emoji: str = "📊"):
             print(f"⚠️ Telegram error: {response.text}")
     except Exception as e:
         print(f"⚠️ Telegram failed: {e}")
- 
+
 # ============================================================================
 # TREND ANALYSIS
 # ============================================================================
- 
+
 def fetch_trending_topics() -> List[Dict]:
     """Fetch trending topics from NewsAPI"""
     try:
@@ -84,11 +84,11 @@ def fetch_trending_topics() -> List[Dict]:
         print(f"❌ Trend fetch error: {e}")
         send_telegram_alert(f"Trend fetch failed: {e}", "❌")
         return []
- 
+
 # ============================================================================
 # SCRIPT GENERATION (Claude AI)
 # ============================================================================
- 
+
 def generate_video_script(trend_topic: Dict) -> str:
     """Generate viral video script using Claude"""
     try:
@@ -97,10 +97,10 @@ def generate_video_script(trend_topic: Dict) -> str:
         client = Anthropic(api_key=ANTHROPIC_API_KEY)
         
         prompt = f"""Generate a viral YouTube Shorts script (60-90 seconds) based on this trending topic.
- 
+
 TRENDING TOPIC: {trend_topic['title']}
 DESCRIPTION: {trend_topic.get('description', 'N/A')}
- 
+
 REQUIREMENTS:
 1. Hook in first 3 seconds (must grab attention IMMEDIATELY)
 2. Clear, engaging voiceover script
@@ -109,28 +109,37 @@ REQUIREMENTS:
 5. Format: [0:00-0:03] HOOK, [0:03-1:00] CONTENT, [1:00-1:15] CTA
 6. MUST be under 90 seconds when read aloud
 7. Make it shareable and comment-worthy
- 
+
 Return ONLY the script, no formatting or extra text."""
- 
+
         response = client.messages.create(
-            model="claude-sonnet-5",
-            max_tokens=500,
+            model="claude-sonnet-4-5",
+            max_tokens=1000,
             messages=[
                 {"role": "user", "content": prompt}
             ]
         )
         
-        script = response.content[0].text.strip()
+        # Find the text block (skip any thinking blocks)
+        script = None
+        for block in response.content:
+            if getattr(block, "type", None) == "text":
+                script = block.text.strip()
+                break
+            if hasattr(block, "text"):
+                script = block.text.strip()
+                break
+        
         return script if script else None
     
     except Exception as e:
         print(f"❌ Script generation error: {e}")
         return None
- 
+
 # ============================================================================
 # VOICE GENERATION (ElevenLabs)
 # ============================================================================
- 
+
 def generate_voiceover(script: str, video_id: int) -> str:
     """Generate voiceover using ElevenLabs"""
     try:
@@ -165,11 +174,11 @@ def generate_voiceover(script: str, video_id: int) -> str:
     except Exception as e:
         print(f"❌ Voiceover generation error: {e}")
         return None
- 
+
 # ============================================================================
 # VIDEO ASSEMBLY (FFmpeg)
 # ============================================================================
- 
+
 def assemble_video(video_id: int, voiceover_path: str, duration: int = 75) -> str:
     """Assemble video from colored background + voiceover"""
     try:
@@ -196,11 +205,11 @@ def assemble_video(video_id: int, voiceover_path: str, duration: int = 75) -> st
     except Exception as e:
         print(f"⚠️ FFmpeg error: {e}")
         return None
- 
+
 # ============================================================================
 # YOUTUBE UPLOAD - SCHEDULED FOR OPTIMAL TIME
 # ============================================================================
- 
+
 def should_upload_now() -> bool:
     """Check if current time is optimal for upload (2 PM UTC)"""
     now = datetime.utcnow()
@@ -212,7 +221,7 @@ def should_upload_now() -> bool:
                  datetime.combine(datetime.today(), optimal_time)).total_seconds()
     
     return abs(time_diff) < 300  # 5 minute window
- 
+
 def upload_to_youtube(video_path: str, title: str, description: str, tags: List[str]) -> bool:
     """Upload video to YouTube with proper metadata"""
     try:
@@ -240,11 +249,11 @@ def upload_to_youtube(video_path: str, title: str, description: str, tags: List[
     except Exception as e:
         print(f"❌ YouTube upload error: {e}")
         return False
- 
+
 # ============================================================================
 # METRICS & LOGGING
 # ============================================================================
- 
+
 def save_video_metadata(video_id: int, data: Dict):
     """Save video metadata to JSON log"""
     try:
@@ -274,11 +283,11 @@ def save_video_metadata(video_id: int, data: Dict):
     
     except Exception as e:
         print(f"⚠️ Metadata save error: {e}")
- 
+
 # ============================================================================
 # MAIN ORCHESTRATION
 # ============================================================================
- 
+
 def run_daily_automation():
     """Main automation loop"""
     print("=" * 80)
@@ -363,6 +372,6 @@ def run_daily_automation():
             f"⏰ Uploading at {OPTIMAL_UPLOAD_HOUR:02d}:00 UTC",
             "✅"
         )
- 
+
 if __name__ == "__main__":
     run_daily_automation()
