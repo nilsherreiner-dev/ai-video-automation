@@ -52,33 +52,34 @@ def get_youtube_service():
     try:
         creds = None
         
-        # Try to load existing token
-        if os.path.exists(TOKEN_FILE):
-            with open(TOKEN_FILE, 'rb') as token:
-                creds = pickle.load(token)
-        
-        # If no valid credentials, create new ones
-        if not creds or not creds.valid:
-            if creds and creds.expired and creds.refresh_token:
-                creds.refresh(Request())
-            else:
-                # Use credentials from environment (GitHub Actions)
-                google_auth_json = os.getenv("GOOGLE_AUTH_JSON")
-                
-                if google_auth_json:
-                    # Parse JSON from environment variable
-                    creds_data = json.loads(google_auth_json)
-                    creds = Credentials.from_authorized_user_info(creds_data, YOUTUBE_SCOPES)
+        # Primary path (GitHub Actions): authorized_user JSON from secret
+        google_auth_json = os.getenv("GOOGLE_AUTH_JSON")
+        if google_auth_json:
+            creds_data = json.loads(google_auth_json)
+            creds = Credentials.from_authorized_user_info(creds_data, YOUTUBE_SCOPES)
+            # An empty/expired access token is normal — refresh with the refresh_token
+            if not creds.valid:
+                if creds.refresh_token:
+                    creds.refresh(Request())
+                else:
+                    print("❌ Credentials have no refresh_token — regenerate the token JSON")
+                    send_telegram_alert("YouTube auth: token JSON missing refresh_token", "❌")
+                    return None
+        else:
+            # Local fallback: cached token or interactive flow (needs a browser)
+            if os.path.exists(TOKEN_FILE):
+                with open(TOKEN_FILE, 'rb') as token:
+                    creds = pickle.load(token)
+            if not creds or not creds.valid:
+                if creds and creds.expired and creds.refresh_token:
+                    creds.refresh(Request())
                 elif os.path.exists(CREDENTIALS_FILE):
-                    # Use local file if exists
                     flow = InstalledAppFlow.from_client_secrets_file(
                         CREDENTIALS_FILE, YOUTUBE_SCOPES)
                     creds = flow.run_local_server(port=0)
                 else:
                     print("❌ No credentials found!")
                     return None
-            
-            # Save token for future use
             with open(TOKEN_FILE, 'wb') as token:
                 pickle.dump(creds, token)
         
