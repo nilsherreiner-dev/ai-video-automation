@@ -9,26 +9,26 @@ on:
 jobs:
   generate-and-upload:
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
-      
+        uses: actions/checkout@v4
+
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      
+
       - name: Install system dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y ffmpeg
-      
+
       - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-      
+
       - name: Run AI Video Automation
         env:
           ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
@@ -40,7 +40,16 @@ jobs:
           GOOGLE_AUTH_JSON: ${{ secrets.GOOGLE_AUTH_JSON }}
         run: |
           python ai_video_engine.py
-      
+
+      - name: Upload generated videos (downloadable from this run)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: generated-videos
+          path: output/*.mp4
+          if-no-files-found: warn
+          retention-days: 7
+
       - name: Upload videos to YouTube
         env:
           GOOGLE_AUTH_JSON: ${{ secrets.GOOGLE_AUTH_JSON }}
@@ -48,11 +57,7 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
           python youtube_uploader_real.py
-      
-      - name: Update metrics
-        run: |
-          echo "Metrics updated at $(date)" >> metrics.log
-      
+
       - name: Notify completion
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
@@ -60,4 +65,4 @@ jobs:
         run: |
           curl -X POST https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage \
             -d chat_id=${TELEGRAM_CHAT_ID} \
-            -d text="✅ Daily automation completed successfully! Videos uploaded to YouTube."
+            -d text="✅ Daily automation completed. Videos generated (check Actions artifact)."
