@@ -113,7 +113,7 @@ REQUIREMENTS:
 Return ONLY the script, no formatting or extra text."""
  
         response = client.messages.create(
-            model="claude-opus-4-6",
+            model="claude-sonnet-5",
             max_tokens=500,
             messages=[
                 {"role": "user", "content": prompt}
