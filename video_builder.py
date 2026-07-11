@@ -456,12 +456,17 @@ def build_video(video_id: int, title: str, script: str,
 
     # --- karaoke caption track (preferred) ---------------------------------
     caps_video = None
-    if word_timings and len(word_timings) <= 220:
-        try:
-            caps_video = _karaoke_track(word_timings, dur, output_dir)
-        except Exception as e:
-            print(f"⚠️ Karaoke captions failed ({e}) — using block captions")
-            caps_video = None
+    if word_timings:
+        if len(word_timings) > 600:
+            print(f"⚠️ {len(word_timings)} words > cap; using block captions")
+        else:
+            try:
+                caps_video = _karaoke_track(word_timings, dur, output_dir)
+            except Exception as e:
+                print(f"⚠️ Karaoke captions failed ({e}) — using block captions")
+                caps_video = None
+    else:
+        print("ℹ️ No word timings available — using block captions")
 
     # --- PNG overlays: title over footage, + block captions if no karaoke --
     overlays = []  # (png_path, start, end)
