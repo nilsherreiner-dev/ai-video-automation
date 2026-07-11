@@ -140,27 +140,61 @@ Return ONLY the script, no formatting or extra text."""
 # VOICE GENERATION (ElevenLabs)
 # ============================================================================
 
-def generate_voiceover(script: str, video_id: int) -> str:
-    """Generate voiceover using ElevenLabs"""
+def extract_keywords(trend_topic: Dict) -> List[str]:
+    """Ask Claude for 3 short visual search terms for stock footage."""
     try:
-        url = "https://api.elevenlabs.io/v1/text-to-speech/21m00Tcm4TlvDq8ikWAM"
-        
+        from anthropic import Anthropic
+        client = Anthropic(api_key=ANTHROPIC_API_KEY)
+        prompt = (
+            "Give exactly 3 short visual stock-footage search terms (1-2 words each) "
+            "that would make good B-roll for a short video about this headline. "
+            "Return ONLY the 3 terms separated by commas, nothing else.\n\n"
+            f"Headline: {trend_topic['title']}"
+        )
+        resp = client.messages.create(
+            model="claude-sonnet-4-5", max_tokens=60,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        text = ""
+        for block in resp.content:
+            if getattr(block, "type", None) == "text":
+                text = block.text
+                break
+        terms = [t.strip() for t in text.replace("\n", ",").split(",") if t.strip()]
+        return terms[:3] or ["news", "city", "technology"]
+    except Exception as e:
+        print(f"⚠️ Keyword extraction failed: {e}")
+        return ["news", "city", "technology"]
+
+
+def generate_voiceover(script: str, video_id: int) -> str:
+    """Generate an energetic voiceover using ElevenLabs (metadata stripped)."""
+    try:
+        from video_builder import clean_text
+        spoken = clean_text(script)  # remove [timestamps], HOOK:, (cues) etc.
+
+        # Voice can be overridden via env; default is a punchier male read.
+        voice_id = os.getenv("ELEVENLABS_VOICE_ID", "pNInz6obpgDQGcFmaJgB")  # Adam
+        url = f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}"
+
         headers = {
             "xi-api-key": ELEVENLABS_API_KEY,
             "Content-Type": "application/json"
         }
-        
+
         data = {
-            "text": script,
-            "model_id": "eleven_monolingual_v1",
+            "text": spoken,
+            "model_id": "eleven_multilingual_v2",
             "voice_settings": {
-                "stability": 0.5,
-                "similarity_boost": 0.75
+                "stability": 0.35,        # lower = more dynamic/expressive
+                "similarity_boost": 0.8,
+                "style": 0.55,            # more energetic delivery
+                "use_speaker_boost": True
             }
         }
-        
-        response = requests.post(url, headers=headers, json=data, timeout=30)
-        
+
+        response = requests.post(url, headers=headers, json=data, timeout=45)
+
         if response.status_code == 200:
             audio_file = os.path.join(OUTPUT_DIR, f"video_{video_id}_voiceover.mp3")
             with open(audio_file, "wb") as f:
@@ -170,7 +204,7 @@ def generate_voiceover(script: str, video_id: int) -> str:
         else:
             print(f"❌ ElevenLabs error: {response.text}")
             return None
-    
+
     except Exception as e:
         print(f"❌ Voiceover generation error: {e}")
         return None
@@ -326,11 +360,20 @@ def run_daily_automation():
             print(f"   ⚠️ Voiceover generation failed, skipping")
             continue
         
-        # Assemble a real, watchable video (branded background + synced captions)
+        # Assemble a real, watchable video (stock footage + synced captions)
         print("   🎬 Assembling video...")
         try:
             from video_builder import build_video
-            video_file = build_video(idx + 1, trend["title"], script, voiceover, OUTPUT_DIR)
+            from stock_footage import get_background_clips
+            keywords = extract_keywords(trend)
+            print(f"   🔎 Footage keywords: {keywords}")
+            clip_dir = os.path.join(OUTPUT_DIR, f"clips_{idx + 1}")
+            bg_clips, credits = get_background_clips(
+                trend["title"], keywords, clip_dir, source="stock")
+            video_file = build_video(idx + 1, trend["title"], script,
+                                     voiceover, OUTPUT_DIR, bg_clips=bg_clips)
+            if credits:
+                print(f"   🎥 Footage: {', '.join(credits)}")
         except Exception as e:
             print(f"   ⚠️ Video assembly failed: {e}")
             video_file = None
