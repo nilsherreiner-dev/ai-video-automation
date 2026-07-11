@@ -127,28 +127,33 @@ def _title_frame(title: str) -> Image.Image:
 CAP_YELLOW = (255, 214, 10)
 
 
-def _render_caption_line(line_words, active_idx, path, font_size=76):
-    """Render a caption line (few words) with the active word highlighted."""
+def _render_caption_line(line_words, active_idx, path, font_size=72):
+    """Render a caption line with the active word highlighted, auto-fit to width."""
     img = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
-    font = ImageFont.truetype(FONT_BOLD, font_size)
-    space = draw.textlength(" ", font=font)
 
-    widths = [draw.textlength(w, font=font) for w in line_words]
-    total = sum(widths) + space * (len(line_words) - 1)
+    max_w = W - 120
+    size = font_size
+    while size > 40:
+        font = ImageFont.truetype(FONT_BOLD, size)
+        space = draw.textlength(" ", font=font)
+        widths = [draw.textlength(w, font=font) for w in line_words]
+        total = sum(widths) + space * (len(line_words) - 1) + 40  # +box padding
+        if total <= max_w:
+            break
+        size -= 4
+
     ascent, descent = font.getmetrics()
     line_h = ascent + descent
-
-    y = H - 620
-    x = (W - total) / 2
+    y = H - 640
+    x = (W - (sum(widths) + space * (len(line_words) - 1))) / 2
     for i, w in enumerate(line_words):
         wl = widths[i]
         if i == active_idx:
-            # highlight box behind the active word
             pad = 16
             draw.rounded_rectangle(
                 [x - pad, y - 8, x + wl + pad, y + line_h + 4],
-                radius=18, fill=(0, 0, 0, 210))
+                radius=18, fill=(0, 0, 0, 215))
             draw.text((x, y), w, font=font, fill=CAP_YELLOW,
                       stroke_width=3, stroke_fill=(0, 0, 0))
         else:
@@ -158,51 +163,74 @@ def _render_caption_line(line_words, active_idx, path, font_size=76):
     img.save(path)
 
 
-def _group_words(words, max_words=4):
-    """Group timed words into short caption lines. words: list of (text,start,end)."""
-    lines = []
-    for i in range(0, len(words), max_words):
-        grp = words[i:i + max_words]
-        texts = [w[0] for w in grp]
-        starts = [w[1] for w in grp]
-        ends = [w[2] for w in grp]
-        lines.append((texts, starts, ends))
+def _group_words(words):
+    """Group timed words into caption lines that fit the width (measured)."""
+    tmp = Image.new("RGBA", (W, H))
+    draw = ImageDraw.Draw(tmp)
+    font = ImageFont.truetype(FONT_BOLD, 72)
+    space = draw.textlength(" ", font=font)
+    max_w = W - 160
+
+    lines, cur, cur_w = [], [], 0.0
+    for w in words:
+        ww = draw.textlength(w[0], font=font)
+        add = ww + (space if cur else 0)
+        if cur and (cur_w + add > max_w or len(cur) >= 5):
+            lines.append(cur)
+            cur, cur_w = [], 0.0
+            add = ww
+        cur.append(w)
+        cur_w += add
+    if cur:
+        lines.append(cur)
     return lines
 
 
 def _karaoke_track(words, dur, work_dir):
-    """Build a transparent .mov caption track with per-word highlighting."""
+    """Transparent .mov caption track: whole line stays visible, highlight moves."""
     sub = os.path.join(work_dir, "_work", "caps")
     os.makedirs(sub, exist_ok=True)
-
     blank = os.path.join(sub, "blank.png")
     Image.new("RGBA", (W, H), (0, 0, 0, 0)).save(blank)
 
-    segments = []  # (png_path, duration)
-    t = 0.0
     lines = _group_words(words)
+    segments = []  # (png, duration)
+    t = 0.0
     idx = 0
-    for texts, starts, ends in lines:
-        for wi in range(len(texts)):
-            w_start = starts[wi]
-            w_end = ends[wi] if ends[wi] > w_start else w_start + 0.25
-            if w_start > t + 0.02:
-                segments.append((blank, w_start - t))  # gap = transparent
-                t = w_start
+    for li, line in enumerate(lines):
+        texts = [w[0] for w in line]
+        line_start = line[0][1]
+        # keep this line on screen until the next line's first word starts
+        if li + 1 < len(lines):
+            display_end = lines[li + 1][0][1]
+        else:
+            display_end = max(dur, line[-1][2])
+
+        if line_start > t + 0.02:
+            segments.append((blank, line_start - t))
+            t = line_start
+
+        for wi in range(len(line)):
+            # highlight persists through the pause until the next word begins
+            if wi + 1 < len(line):
+                seg_end = line[wi + 1][1]
+            else:
+                seg_end = display_end
+            seg_end = max(seg_end, t + 0.08)
             png = os.path.join(sub, f"l{idx:04d}.png")
             _render_caption_line(texts, wi, png)
-            segments.append((png, max(w_end - w_start, 0.12)))
-            t = w_end
+            segments.append((png, seg_end - t))
+            t = seg_end
             idx += 1
+
     if t < dur:
         segments.append((blank, dur - t))
 
-    # write concat list
     listfile = os.path.join(sub, "list.txt")
     with open(listfile, "w") as f:
         for p, d in segments:
             f.write(f"file '{os.path.abspath(p)}'\n")
-            f.write(f"duration {d:.3f}\n")
+            f.write(f"duration {max(d, 0.05):.3f}\n")
         f.write(f"file '{os.path.abspath(segments[-1][0])}'\n")
 
     out = os.path.join(work_dir, "_work", "caps.mov")
@@ -286,30 +314,36 @@ def _title_overlay_png(title: str, path: str):
 
 def _build_background(clips, dur, work_dir):
     """Concatenate stock clips into one 1080x1920 background of length `dur`,
-    with an alternating slow push-in/out on each clip for energy."""
+    with a varied Ken Burns move (zoom + pan + tilt) on each clip."""
     fps = 30
     per = max(dur / len(clips), 2.0)
-    seg_frames = int(per * fps) + 2
+    D = int(per * fps) + 2
+
+    # motion presets: (zoom expr, x expr, y expr) — cycled per clip
+    presets = [
+        (f"min(zoom+0.0018,1.35)", "iw/2-(iw/zoom/2)+(iw*0.05)*on/{D}", "ih/2-(ih/zoom/2)"),
+        (f"1.35", "iw/2-(iw/zoom/2)", "(ih-ih/zoom)*(1-on/{D})"),
+        (f"if(lte(zoom,1.0),1.35,max(zoom-0.0016,1.0))", "iw/2-(iw/zoom/2)", "ih/2-(ih/zoom/2)"),
+        (f"1.30", "(iw-iw/zoom)*(1-on/{D})", "ih/2-(ih/zoom/2)"),
+        (f"min(zoom+0.0016,1.30)", "iw/2-(iw/zoom/2)", "(ih-ih/zoom)*on/{D}"),
+    ]
+
     inputs, filts, labels = [], [], []
     for i, clip in enumerate(clips):
         inputs += ["-i", clip]
-        # alternate zoom-in / zoom-out per clip = dynamic motion
-        if i % 2 == 0:
-            zexpr = "min(zoom+0.0015,1.25)"
-        else:
-            zexpr = "if(lte(zoom,1.0),1.25,max(zoom-0.0015,1.0))"
+        z, xexpr, yexpr = presets[i % len(presets)]
+        xexpr = xexpr.replace("{D}", str(D))
+        yexpr = yexpr.replace("{D}", str(D))
         filts.append(
             f"[{i}:v]scale={W}:{H}:force_original_aspect_ratio=increase,"
-            f"crop={W}:{H},setsar=1,fps={fps},trim=0:{per:.2f},"
-            f"setpts=PTS-STARTPTS,"
-            f"zoompan=z='{zexpr}':d={seg_frames}:s={W}x{H}:fps={fps}[v{i}]"
+            f"crop={W}:{H},setsar=1,fps={fps},trim=0:{per:.2f},setpts=PTS-STARTPTS,"
+            f"zoompan=z='{z}':x='{xexpr}':y='{yexpr}':d={D}:s={W}x{H}:fps={fps}[v{i}]"
         )
         labels.append(f"[v{i}]")
     concat = "".join(labels) + f"concat=n={len(clips)}:v=1:a=0[cat]"
     tail = "[cat]tpad=stop_mode=clone:stop_duration=6[bg]"
     filt = ";".join(filts + [concat, tail])
 
-    # keep the intermediate OUT of output/*.mp4 so it is never published
     sub = os.path.join(work_dir, "_work")
     os.makedirs(sub, exist_ok=True)
     out = os.path.join(sub, "bg.mp4")
