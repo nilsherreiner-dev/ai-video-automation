@@ -167,43 +167,81 @@ def extract_keywords(trend_topic: Dict) -> List[str]:
         return ["news", "city", "technology"]
 
 
+def _words_from_alignment(alignment: dict):
+    """Convert ElevenLabs character alignment into (word, start, end) tuples."""
+    chars = alignment.get("characters", [])
+    starts = alignment.get("character_start_times_seconds", [])
+    ends = alignment.get("character_end_times_seconds", [])
+    words, cur, w_start, w_end = [], "", None, None
+    for i, ch in enumerate(chars):
+        if ch.strip() == "":
+            if cur:
+                words.append((cur, w_start, w_end))
+                cur, w_start, w_end = "", None, None
+            continue
+        if w_start is None:
+            w_start = starts[i] if i < len(starts) else 0.0
+        cur += ch
+        w_end = ends[i] if i < len(ends) else w_start
+    if cur:
+        words.append((cur, w_start, w_end))
+    return words
+
+
 def generate_voiceover(script: str, video_id: int) -> str:
-    """Generate an energetic voiceover using ElevenLabs (metadata stripped)."""
+    """Generate an energetic voiceover with word timestamps (metadata stripped).
+
+    Writes the audio file and, when available, a sidecar
+    video_{id}_words.json with (word, start, end) timings for karaoke captions.
+    """
     try:
         from video_builder import clean_text
-        spoken = clean_text(script)  # remove [timestamps], HOOK:, (cues) etc.
+        spoken = clean_text(script)
 
-        # Voice can be overridden via env; default is a punchier male read.
         voice_id = os.getenv("ELEVENLABS_VOICE_ID", "pNInz6obpgDQGcFmaJgB")  # Adam
-        url = f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}"
-
-        headers = {
-            "xi-api-key": ELEVENLABS_API_KEY,
-            "Content-Type": "application/json"
-        }
-
+        headers = {"xi-api-key": ELEVENLABS_API_KEY, "Content-Type": "application/json"}
         data = {
             "text": spoken,
             "model_id": "eleven_multilingual_v2",
             "voice_settings": {
-                "stability": 0.35,        # lower = more dynamic/expressive
+                "stability": 0.35,
                 "similarity_boost": 0.8,
-                "style": 0.55,            # more energetic delivery
+                "style": 0.55,
                 "use_speaker_boost": True
             }
         }
+        audio_file = os.path.join(OUTPUT_DIR, f"video_{video_id}_voiceover.mp3")
+        words_file = os.path.join(OUTPUT_DIR, f"video_{video_id}_words.json")
 
-        response = requests.post(url, headers=headers, json=data, timeout=45)
-
-        if response.status_code == 200:
-            audio_file = os.path.join(OUTPUT_DIR, f"video_{video_id}_voiceover.mp3")
+        # Preferred: timestamped endpoint (enables karaoke captions)
+        ts_url = f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}/with-timestamps"
+        r = requests.post(ts_url, headers=headers, json=data, timeout=60)
+        if r.status_code == 200:
+            payload = r.json()
+            import base64
             with open(audio_file, "wb") as f:
-                f.write(response.content)
+                f.write(base64.b64decode(payload["audio_base64"]))
+            alignment = payload.get("alignment") or payload.get("normalized_alignment")
+            if alignment:
+                words = _words_from_alignment(alignment)
+                with open(words_file, "w") as f:
+                    json.dump(words, f)
+                print(f"✅ Voiceover + {len(words)} word timings")
+            else:
+                print("✅ Voiceover generated (no alignment returned)")
+            return audio_file
+
+        # Fallback: plain endpoint (block captions only)
+        print(f"⚠️ Timestamp endpoint HTTP {r.status_code}; using plain TTS")
+        url = f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}"
+        resp = requests.post(url, headers=headers, json=data, timeout=45)
+        if resp.status_code == 200:
+            with open(audio_file, "wb") as f:
+                f.write(resp.content)
             print(f"✅ Voiceover generated: {audio_file}")
             return audio_file
-        else:
-            print(f"❌ ElevenLabs error: {response.text}")
-            return None
+        print(f"❌ ElevenLabs error: {resp.text}")
+        return None
 
     except Exception as e:
         print(f"❌ Voiceover generation error: {e}")
@@ -370,8 +408,19 @@ def run_daily_automation():
             clip_dir = os.path.join(OUTPUT_DIR, f"clips_{idx + 1}")
             bg_clips, credits = get_background_clips(
                 trend["title"], keywords, clip_dir, source="stock")
+            video_file = None
+            # load word timings for karaoke captions if available
+            word_timings = None
+            words_file = os.path.join(OUTPUT_DIR, f"video_{idx + 1}_words.json")
+            if os.path.exists(words_file):
+                try:
+                    with open(words_file) as wf:
+                        word_timings = [tuple(x) for x in json.load(wf)]
+                except Exception:
+                    word_timings = None
             video_file = build_video(idx + 1, trend["title"], script,
-                                     voiceover, OUTPUT_DIR, bg_clips=bg_clips)
+                                     voiceover, OUTPUT_DIR, bg_clips=bg_clips,
+                                     word_timings=word_timings)
             if credits:
                 print(f"   🎥 Footage: {', '.join(credits)}")
         except Exception as e:
