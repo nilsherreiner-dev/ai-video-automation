@@ -124,6 +124,94 @@ def _title_frame(title: str) -> Image.Image:
     return img
 
 
+CAP_YELLOW = (255, 214, 10)
+
+
+def _render_caption_line(line_words, active_idx, path, font_size=76):
+    """Render a caption line (few words) with the active word highlighted."""
+    img = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(img)
+    font = ImageFont.truetype(FONT_BOLD, font_size)
+    space = draw.textlength(" ", font=font)
+
+    widths = [draw.textlength(w, font=font) for w in line_words]
+    total = sum(widths) + space * (len(line_words) - 1)
+    ascent, descent = font.getmetrics()
+    line_h = ascent + descent
+
+    y = H - 620
+    x = (W - total) / 2
+    for i, w in enumerate(line_words):
+        wl = widths[i]
+        if i == active_idx:
+            # highlight box behind the active word
+            pad = 16
+            draw.rounded_rectangle(
+                [x - pad, y - 8, x + wl + pad, y + line_h + 4],
+                radius=18, fill=(0, 0, 0, 210))
+            draw.text((x, y), w, font=font, fill=CAP_YELLOW,
+                      stroke_width=3, stroke_fill=(0, 0, 0))
+        else:
+            draw.text((x, y), w, font=font, fill=(255, 255, 255),
+                      stroke_width=4, stroke_fill=(0, 0, 0))
+        x += wl + space
+    img.save(path)
+
+
+def _group_words(words, max_words=4):
+    """Group timed words into short caption lines. words: list of (text,start,end)."""
+    lines = []
+    for i in range(0, len(words), max_words):
+        grp = words[i:i + max_words]
+        texts = [w[0] for w in grp]
+        starts = [w[1] for w in grp]
+        ends = [w[2] for w in grp]
+        lines.append((texts, starts, ends))
+    return lines
+
+
+def _karaoke_track(words, dur, work_dir):
+    """Build a transparent .mov caption track with per-word highlighting."""
+    sub = os.path.join(work_dir, "_work", "caps")
+    os.makedirs(sub, exist_ok=True)
+
+    blank = os.path.join(sub, "blank.png")
+    Image.new("RGBA", (W, H), (0, 0, 0, 0)).save(blank)
+
+    segments = []  # (png_path, duration)
+    t = 0.0
+    lines = _group_words(words)
+    idx = 0
+    for texts, starts, ends in lines:
+        for wi in range(len(texts)):
+            w_start = starts[wi]
+            w_end = ends[wi] if ends[wi] > w_start else w_start + 0.25
+            if w_start > t + 0.02:
+                segments.append((blank, w_start - t))  # gap = transparent
+                t = w_start
+            png = os.path.join(sub, f"l{idx:04d}.png")
+            _render_caption_line(texts, wi, png)
+            segments.append((png, max(w_end - w_start, 0.12)))
+            t = w_end
+            idx += 1
+    if t < dur:
+        segments.append((blank, dur - t))
+
+    # write concat list
+    listfile = os.path.join(sub, "list.txt")
+    with open(listfile, "w") as f:
+        for p, d in segments:
+            f.write(f"file '{os.path.abspath(p)}'\n")
+            f.write(f"duration {d:.3f}\n")
+        f.write(f"file '{os.path.abspath(segments[-1][0])}'\n")
+
+    out = os.path.join(work_dir, "_work", "caps.mov")
+    cmd = ["ffmpeg", "-y", "-f", "concat", "-safe", "0", "-i", listfile,
+           "-vf", "fps=30,format=rgba", "-c:v", "qtrle", "-t", f"{dur:.2f}", out]
+    subprocess.run(cmd, check=True, capture_output=True)
+    return out
+
+
 def _caption_png(text: str, path: str):
     """Transparent PNG with a caption chunk (bottom third)."""
     img = Image.new("RGBA", (W, H), (0, 0, 0, 0))
@@ -197,23 +285,34 @@ def _title_overlay_png(title: str, path: str):
 
 
 def _build_background(clips, dur, work_dir):
-    """Concatenate stock clips into one 1080x1920 background of length `dur`."""
+    """Concatenate stock clips into one 1080x1920 background of length `dur`,
+    with an alternating slow push-in/out on each clip for energy."""
     fps = 30
     per = max(dur / len(clips), 2.0)
+    seg_frames = int(per * fps) + 2
     inputs, filts, labels = [], [], []
     for i, clip in enumerate(clips):
         inputs += ["-i", clip]
+        # alternate zoom-in / zoom-out per clip = dynamic motion
+        if i % 2 == 0:
+            zexpr = "min(zoom+0.0015,1.25)"
+        else:
+            zexpr = "if(lte(zoom,1.0),1.25,max(zoom-0.0015,1.0))"
         filts.append(
             f"[{i}:v]scale={W}:{H}:force_original_aspect_ratio=increase,"
-            f"crop={W}:{H},setsar=1,fps={fps},"
-            f"trim=0:{per:.2f},setpts=PTS-STARTPTS[v{i}]"
+            f"crop={W}:{H},setsar=1,fps={fps},trim=0:{per:.2f},"
+            f"setpts=PTS-STARTPTS,"
+            f"zoompan=z='{zexpr}':d={seg_frames}:s={W}x{H}:fps={fps}[v{i}]"
         )
         labels.append(f"[v{i}]")
     concat = "".join(labels) + f"concat=n={len(clips)}:v=1:a=0[cat]"
     tail = "[cat]tpad=stop_mode=clone:stop_duration=6[bg]"
     filt = ";".join(filts + [concat, tail])
 
-    out = os.path.join(work_dir, "_bg.mp4")
+    # keep the intermediate OUT of output/*.mp4 so it is never published
+    sub = os.path.join(work_dir, "_work")
+    os.makedirs(sub, exist_ok=True)
+    out = os.path.join(sub, "bg.mp4")
     cmd = ["ffmpeg", "-y", *inputs, "-filter_complex", filt,
            "-map", "[bg]", "-t", f"{dur:.2f}", "-r", str(fps),
            "-c:v", "libx264", "-preset", "veryfast", "-crf", "22",
@@ -235,11 +334,12 @@ def _pick_music(script_dir: str):
 
 def build_video(video_id: int, title: str, script: str,
                 voiceover_path: str, output_dir: str,
-                music_path: str = None, bg_clips: list = None) -> str:
+                music_path: str = None, bg_clips: list = None,
+                word_timings: list = None) -> str:
     """Assemble a real, watchable vertical short.
 
-    If bg_clips are provided, they become the moving background and the title
-    is shown briefly over the footage. Otherwise a branded gradient is used.
+    word_timings (optional): list of (word, start, end) → karaoke captions.
+    Falls back to block captions when not provided.
     """
     os.makedirs(output_dir, exist_ok=True)
     dur = _audio_duration(voiceover_path)
@@ -255,46 +355,60 @@ def build_video(video_id: int, title: str, script: str,
         try:
             bg_path = _build_background(bg_clips, dur, output_dir)
             base_inputs = ["-i", bg_path]
-            base_filter = f"[0:v]setsar=1[bg]"
+            base_filter = "[0:v]setsar=1[bg]"
         except Exception as e:
             print(f"⚠️ Stock background failed ({e}) — using gradient")
             use_footage = False
 
     if not use_footage:
         base_path = os.path.join(output_dir, f"_base_{video_id}.png")
-        _title_frame(title).save(base_path)  # gradient WITH baked title
+        _title_frame(title).save(base_path)
         base_inputs = ["-loop", "1", "-i", base_path]
         base_filter = (f"[0:v]scale={W}:{H},zoompan=z='min(zoom+0.0006,1.10)':"
                        f"d={int(dur*fps)}:s={W}x{H}:fps={fps}[bg]")
 
-    # --- overlays: (title over footage) + timed captions -------------------
+    # --- karaoke caption track (preferred) ---------------------------------
+    caps_video = None
+    if word_timings and len(word_timings) <= 220:
+        try:
+            caps_video = _karaoke_track(word_timings, dur, output_dir)
+        except Exception as e:
+            print(f"⚠️ Karaoke captions failed ({e}) — using block captions")
+            caps_video = None
+
+    # --- PNG overlays: title over footage, + block captions if no karaoke --
     overlays = []  # (png_path, start, end)
     if use_footage:
         title_png = os.path.join(output_dir, f"_title_{video_id}.png")
         _title_overlay_png(title, title_png)
         overlays.append((title_png, 0.0, min(3.6, dur)))
 
-    chunks = _clean_script(script) or [title]
-    per = max(dur / len(chunks), 1.2)
-    cap_dir = os.path.join(output_dir, f"_caps_{video_id}")
-    os.makedirs(cap_dir, exist_ok=True)
-    for i, ch in enumerate(chunks):
-        p = os.path.join(cap_dir, f"cap_{i:03d}.png")
-        _caption_png(ch, p)
-        overlays.append((p, i * per, min((i + 1) * per, dur) - 0.08))
+    if caps_video is None:
+        chunks = _clean_script(script) or [title]
+        per = max(dur / len(chunks), 1.2)
+        cap_dir = os.path.join(output_dir, f"_caps_{video_id}")
+        os.makedirs(cap_dir, exist_ok=True)
+        for i, ch in enumerate(chunks):
+            p = os.path.join(cap_dir, f"cap_{i:03d}.png")
+            _caption_png(ch, p)
+            overlays.append((p, i * per, min((i + 1) * per, dur) - 0.08))
 
     # --- assemble ffmpeg inputs -------------------------------------------
     inputs = list(base_inputs)
     for p, _, _ in overlays:
         inputs += ["-i", p]
-    voice_idx = len(overlays) + 1
+    caps_idx = None
+    if caps_video:
+        caps_idx = len(overlays) + 1
+        inputs += ["-i", caps_video]
+    voice_idx = len(overlays) + (1 if caps_video else 0) + 1
     inputs += ["-i", voiceover_path]
     music_idx = None
     if music_path and os.path.exists(music_path):
         music_idx = voice_idx + 1
         inputs += ["-stream_loop", "-1", "-i", music_path]
 
-    # video filter chain
+    # video filter chain: PNG overlays (timed) then karaoke video (full length)
     filt = base_filter
     last = "bg"
     for idx, (_, start, end) in enumerate(overlays, start=1):
@@ -302,6 +416,9 @@ def build_video(video_id: int, title: str, script: str,
         filt += (f";[{last}][{idx}:v]overlay=0:0:"
                  f"enable='between(t,{start:.2f},{end:.2f})'[{nxt}]")
         last = nxt
+    if caps_idx:
+        filt += f";[{last}][{caps_idx}:v]overlay=0:0[vk]"
+        last = "vk"
 
     # audio: voice full, music ducked underneath
     if music_idx is not None:
