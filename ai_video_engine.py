@@ -195,8 +195,8 @@ def generate_voiceover(script: str, video_id: int) -> str:
     video_{id}_words.json with (word, start, end) timings for karaoke captions.
     """
     try:
-        from video_builder import clean_text
-        spoken = clean_text(script)
+        from video_builder import clean_text, normalize_for_speech
+        spoken = normalize_for_speech(clean_text(script))
 
         voice_id = os.getenv("ELEVENLABS_VOICE_ID", "pNInz6obpgDQGcFmaJgB")  # Adam
         headers = {"xi-api-key": ELEVENLABS_API_KEY, "Content-Type": "application/json"}
