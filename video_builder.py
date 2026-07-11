@@ -146,24 +146,80 @@ def _caption_png(text: str, path: str):
     img.save(path)
 
 
-def _clean_script(script: str):
-    """Strip timestamps/labels, return list of caption chunks."""
-    txt = re.sub(r"\[[^\]]*\]", " ", script)          # [0:00-0:03]
+def clean_text(script: str) -> str:
+    """Strip timestamps/labels/stage-directions so they are not read aloud."""
+    txt = re.sub(r"\[[^\]]*\]", " ", script)              # [0:00-0:03]
+    txt = re.sub(r"\([^)]*\)", " ", txt)                  # (pause), (excited)
+    txt = re.sub(r"\*[^*]*\*", " ", txt)                  # *emphasis* stage cues
+    txt = re.sub(r"(?mi)^\s*(HOOK|CONTENT|CTA|SCRIPT|VOICEOVER|NARRATOR)\s*:?",
+                 " ", txt)
     txt = re.sub(r"\b(HOOK|CONTENT|CTA)\b:?", " ", txt, flags=re.I)
     txt = re.sub(r"\s+", " ", txt).strip()
-    # split into sentence-ish chunks
+    return txt
+
+
+def _clean_script(script: str):
+    """Return caption-sized chunks of the cleaned narration text."""
+    txt = clean_text(script)
     parts = re.split(r"(?<=[.!?]) +", txt)
     chunks = []
     for p in parts:
         p = p.strip()
         if not p:
             continue
-        # further split long sentences
         if len(p) > 90:
             chunks.extend(textwrap.wrap(p, 80))
         else:
             chunks.append(p)
     return [c for c in chunks if c]
+
+
+def _title_overlay_png(title: str, path: str):
+    """Transparent PNG: brand tag + title with a scrim, shown briefly over footage."""
+    img = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(img)
+
+    # soft dark scrim behind the title for readability over any footage
+    scrim = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    sd = ImageDraw.Draw(scrim)
+    sd.rectangle([0, 220, W, 760], fill=(0, 0, 0, 120))
+    scrim = scrim.filter(ImageFilter.GaussianBlur(60))
+    img.alpha_composite(scrim)
+
+    tag_font = ImageFont.truetype(FONT_BOLD, 26)
+    tag = " ".join("neuron0v3rload".upper())
+    draw.text((W // 2, 250), tag, font=tag_font, fill=(150, 200, 255), anchor="ma")
+
+    tfont, tlines = _fit_font(draw, title.upper(), FONT_BOLD, W - 160, 96, 52)
+    _draw_center(draw, tlines, tfont, 340, (255, 255, 255),
+                 stroke=3, stroke_fill=(0, 0, 0))
+    img.save(path)
+
+
+def _build_background(clips, dur, work_dir):
+    """Concatenate stock clips into one 1080x1920 background of length `dur`."""
+    fps = 30
+    per = max(dur / len(clips), 2.0)
+    inputs, filts, labels = [], [], []
+    for i, clip in enumerate(clips):
+        inputs += ["-i", clip]
+        filts.append(
+            f"[{i}:v]scale={W}:{H}:force_original_aspect_ratio=increase,"
+            f"crop={W}:{H},setsar=1,fps={fps},"
+            f"trim=0:{per:.2f},setpts=PTS-STARTPTS[v{i}]"
+        )
+        labels.append(f"[v{i}]")
+    concat = "".join(labels) + f"concat=n={len(clips)}:v=1:a=0[cat]"
+    tail = "[cat]tpad=stop_mode=clone:stop_duration=6[bg]"
+    filt = ";".join(filts + [concat, tail])
+
+    out = os.path.join(work_dir, "_bg.mp4")
+    cmd = ["ffmpeg", "-y", *inputs, "-filter_complex", filt,
+           "-map", "[bg]", "-t", f"{dur:.2f}", "-r", str(fps),
+           "-c:v", "libx264", "-preset", "veryfast", "-crf", "22",
+           "-pix_fmt", "yuv420p", out]
+    subprocess.run(cmd, check=True, capture_output=True)
+    return out
 
 
 def _pick_music(script_dir: str):
@@ -179,55 +235,75 @@ def _pick_music(script_dir: str):
 
 def build_video(video_id: int, title: str, script: str,
                 voiceover_path: str, output_dir: str,
-                music_path: str = None) -> str:
-    """Assemble a real, watchable vertical short."""
+                music_path: str = None, bg_clips: list = None) -> str:
+    """Assemble a real, watchable vertical short.
+
+    If bg_clips are provided, they become the moving background and the title
+    is shown briefly over the footage. Otherwise a branded gradient is used.
+    """
     os.makedirs(output_dir, exist_ok=True)
     dur = _audio_duration(voiceover_path)
+    fps = 30
 
-    # auto-pick background music if a music/ folder exists next to the script
     if music_path is None:
         music_path = _pick_music(os.path.dirname(os.path.abspath(__file__)))
 
-    # base plate
-    base_path = os.path.join(output_dir, f"_base_{video_id}.png")
-    _title_frame(title).save(base_path)
+    use_footage = bool(bg_clips)
 
-    # captions
+    # --- base visual -------------------------------------------------------
+    if use_footage:
+        try:
+            bg_path = _build_background(bg_clips, dur, output_dir)
+            base_inputs = ["-i", bg_path]
+            base_filter = f"[0:v]setsar=1[bg]"
+        except Exception as e:
+            print(f"⚠️ Stock background failed ({e}) — using gradient")
+            use_footage = False
+
+    if not use_footage:
+        base_path = os.path.join(output_dir, f"_base_{video_id}.png")
+        _title_frame(title).save(base_path)  # gradient WITH baked title
+        base_inputs = ["-loop", "1", "-i", base_path]
+        base_filter = (f"[0:v]scale={W}:{H},zoompan=z='min(zoom+0.0006,1.10)':"
+                       f"d={int(dur*fps)}:s={W}x{H}:fps={fps}[bg]")
+
+    # --- overlays: (title over footage) + timed captions -------------------
+    overlays = []  # (png_path, start, end)
+    if use_footage:
+        title_png = os.path.join(output_dir, f"_title_{video_id}.png")
+        _title_overlay_png(title, title_png)
+        overlays.append((title_png, 0.0, min(3.6, dur)))
+
     chunks = _clean_script(script) or [title]
     per = max(dur / len(chunks), 1.2)
     cap_dir = os.path.join(output_dir, f"_caps_{video_id}")
     os.makedirs(cap_dir, exist_ok=True)
-    cap_files = []
     for i, ch in enumerate(chunks):
         p = os.path.join(cap_dir, f"cap_{i:03d}.png")
         _caption_png(ch, p)
-        cap_files.append((p, i * per, min((i + 1) * per, dur) - 0.08))
+        overlays.append((p, i * per, min((i + 1) * per, dur) - 0.08))
 
-    # build inputs: base image, caption PNGs, voiceover, (optional looped music)
-    inputs = ["-loop", "1", "-i", base_path]
-    for p, _, _ in cap_files:
+    # --- assemble ffmpeg inputs -------------------------------------------
+    inputs = list(base_inputs)
+    for p, _, _ in overlays:
         inputs += ["-i", p]
-    voice_idx = len(cap_files) + 1
+    voice_idx = len(overlays) + 1
     inputs += ["-i", voiceover_path]
     music_idx = None
     if music_path and os.path.exists(music_path):
         music_idx = voice_idx + 1
-        inputs += ["-stream_loop", "-1", "-i", music_path]  # loop to cover length
+        inputs += ["-stream_loop", "-1", "-i", music_path]
 
-    # video filter: subtle zoom + timed caption overlays
-    fps = 30
-    filt = (
-        f"[0:v]scale={W}:{H},zoompan=z='min(zoom+0.0006,1.10)':"
-        f"d={int(dur*fps)}:s={W}x{H}:fps={fps}[bg]"
-    )
+    # video filter chain
+    filt = base_filter
     last = "bg"
-    for idx, (_, start, end) in enumerate(cap_files, start=1):
+    for idx, (_, start, end) in enumerate(overlays, start=1):
         nxt = f"v{idx}"
         filt += (f";[{last}][{idx}:v]overlay=0:0:"
                  f"enable='between(t,{start:.2f},{end:.2f})'[{nxt}]")
         last = nxt
 
-    # audio filter: voice full volume, music ducked underneath
+    # audio: voice full, music ducked underneath
     if music_idx is not None:
         filt += (f";[{voice_idx}:a]volume=1.0[va]"
                  f";[{music_idx}:a]volume=0.12[ma]"
