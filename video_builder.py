@@ -359,30 +359,38 @@ def _title_overlay_png(title: str, path: str):
 
 def _build_background(clips, dur, work_dir):
     """Concatenate stock clips into one 1080x1920 background of length `dur`,
-    with a varied Ken Burns move (zoom + pan + tilt) on each clip."""
+    with SMOOTH Ken Burns motion (per-frame zoompan + supersampling)."""
     fps = 30
     per = max(dur / len(clips), 2.0)
-    D = int(per * fps) + 2
+    T = max(int(per * fps), 2)   # total frames per clip
+    SS = 2                        # supersample factor kills zoompan jitter
 
-    # motion presets: (zoom expr, x expr, y expr) — cycled per clip
+    # motion presets using on/T in [0,1]; z is gentle for a calm, smooth move
     presets = [
-        (f"min(zoom+0.0018,1.35)", "iw/2-(iw/zoom/2)+(iw*0.05)*on/{D}", "ih/2-(ih/zoom/2)"),
-        (f"1.35", "iw/2-(iw/zoom/2)", "(ih-ih/zoom)*(1-on/{D})"),
-        (f"if(lte(zoom,1.0),1.35,max(zoom-0.0016,1.0))", "iw/2-(iw/zoom/2)", "ih/2-(ih/zoom/2)"),
-        (f"1.30", "(iw-iw/zoom)*(1-on/{D})", "ih/2-(ih/zoom/2)"),
-        (f"min(zoom+0.0016,1.30)", "iw/2-(iw/zoom/2)", "(ih-ih/zoom)*on/{D}"),
+        # zoom in, centered
+        ("1+0.16*on/{T}", "iw/2-(iw/zoom/2)", "ih/2-(ih/zoom/2)"),
+        # slight zoom, pan right
+        ("1.12", "(iw-iw/zoom)*(on/{T})", "ih/2-(ih/zoom/2)"),
+        # zoom out, centered
+        ("1.16-0.16*on/{T}", "iw/2-(iw/zoom/2)", "ih/2-(ih/zoom/2)"),
+        # slight zoom, pan left
+        ("1.12", "(iw-iw/zoom)*(1-on/{T})", "ih/2-(ih/zoom/2)"),
+        # slight zoom, tilt up
+        ("1.12", "iw/2-(iw/zoom/2)", "(ih-ih/zoom)*(1-on/{T})"),
     ]
 
     inputs, filts, labels = [], [], []
     for i, clip in enumerate(clips):
         inputs += ["-i", clip]
         z, xexpr, yexpr = presets[i % len(presets)]
-        xexpr = xexpr.replace("{D}", str(D))
-        yexpr = yexpr.replace("{D}", str(D))
+        z = z.replace("{T}", str(T))
+        xexpr = xexpr.replace("{T}", str(T))
+        yexpr = yexpr.replace("{T}", str(T))
         filts.append(
             f"[{i}:v]scale={W}:{H}:force_original_aspect_ratio=increase,"
             f"crop={W}:{H},setsar=1,fps={fps},trim=0:{per:.2f},setpts=PTS-STARTPTS,"
-            f"zoompan=z='{z}':x='{xexpr}':y='{yexpr}':d={D}:s={W}x{H}:fps={fps}[v{i}]"
+            f"scale={W*SS}:{H*SS},"                       # supersample
+            f"zoompan=z='{z}':x='{xexpr}':y='{yexpr}':d=1:s={W}x{H}:fps={fps}[v{i}]"
         )
         labels.append(f"[v{i}]")
     concat = "".join(labels) + f"concat=n={len(clips)}:v=1:a=0[cat]"
