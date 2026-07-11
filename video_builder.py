@@ -118,7 +118,7 @@ def _title_frame(title: str) -> Image.Image:
     draw.text((W // 2, 84), tag, font=tag_font, fill=(120, 132, 168), anchor="ma")
 
     # title, centered
-    tfont, tlines = _fit_font(draw, title.upper(), FONT_BOLD, W - 160, 96, 52)
+    tfont, tlines = _fit_font(draw, _clean_title(title).upper(), FONT_BOLD, W - 160, 96, 52)
     _draw_center(draw, tlines, tfont, 360, (255, 255, 255),
                  stroke=3, stroke_fill=(0, 0, 0))
     return img
@@ -262,6 +262,20 @@ def _caption_png(text: str, path: str):
     img.save(path)
 
 
+def _clean_title(title: str) -> str:
+    """Strip trailing news-source suffix like ' - Allrecipes' or ' | CNBC'."""
+    t = re.sub(r"\s*[-|–—]\s*[^-|–—]{1,30}$", "", title).strip()
+    return t or title
+
+
+def normalize_for_speech(text: str) -> str:
+    """Fixes so TTS reads correctly (e.g. thousands separators)."""
+    text = re.sub(r"(?<=\d),(?=\d)", "", text)   # 1,200 -> 1200
+    text = text.replace("%", " percent")
+    text = re.sub(r"\s+", " ", text).strip()
+    return text
+
+
 def clean_text(script: str) -> str:
     """Strip timestamps/labels/stage-directions so they are not read aloud."""
     txt = re.sub(r"\[[^\]]*\]", " ", script)              # [0:00-0:03]
@@ -290,25 +304,56 @@ def _clean_script(script: str):
     return [c for c in chunks if c]
 
 
+def _fit_title(draw, text, max_w, max_h, start=78, min_size=42, max_lines=4):
+    """Fit title within width AND height, capped to max_lines (truncate if needed)."""
+    size = start
+    while size >= min_size:
+        font = ImageFont.truetype(FONT_BOLD, size)
+        lines = _wrap(draw, text, font, max_w)
+        a, d = font.getmetrics()
+        lh = a + d + 12
+        fits_w = all(draw.textbbox((0, 0), ln, font=font)[2] <= max_w for ln in lines)
+        if len(lines) <= max_lines and lh * len(lines) <= max_h and fits_w:
+            return font, lines, lh
+        size -= 4
+    font = ImageFont.truetype(FONT_BOLD, min_size)
+    a, d = font.getmetrics()
+    lh = a + d + 12
+    lines = _wrap(draw, text, font, max_w)[:max_lines]
+    if lines:
+        lines[-1] = lines[-1].rstrip() + "…"
+    return font, lines, lh
+
+
 def _title_overlay_png(title: str, path: str):
-    """Transparent PNG: brand tag + title with a scrim, shown briefly over footage."""
+    """Transparent PNG: small brand tag + compact title in the UPPER area only,
+    sized so it never reaches the caption zone."""
     img = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
 
-    # soft dark scrim behind the title for readability over any footage
+    title = _clean_title(title).upper()
+    top, max_h = 300, 460          # title lives here; captions are ~y1280+
+    font, lines, lh = _fit_title(draw, title, W - 160, max_h)
+    block_h = lh * len(lines)
+    start_y = top + (max_h - block_h) // 2
+
+    # scrim sized to the actual text block
     scrim = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     sd = ImageDraw.Draw(scrim)
-    sd.rectangle([0, 220, W, 760], fill=(0, 0, 0, 120))
-    scrim = scrim.filter(ImageFilter.GaussianBlur(60))
+    sd.rectangle([80, start_y - 90, W - 80, start_y + block_h + 40],
+                 fill=(0, 0, 0, 120))
+    scrim = scrim.filter(ImageFilter.GaussianBlur(50))
     img.alpha_composite(scrim)
 
     tag_font = ImageFont.truetype(FONT_BOLD, 26)
-    tag = " ".join("neuron0v3rload".upper())
-    draw.text((W // 2, 250), tag, font=tag_font, fill=(150, 200, 255), anchor="ma")
+    draw.text((W // 2, start_y - 70), " ".join("neuron0v3rload".upper()),
+              font=tag_font, fill=(150, 200, 255), anchor="ma")
 
-    tfont, tlines = _fit_font(draw, title.upper(), FONT_BOLD, W - 160, 96, 52)
-    _draw_center(draw, tlines, tfont, 340, (255, 255, 255),
-                 stroke=3, stroke_fill=(0, 0, 0))
+    y = start_y
+    for ln in lines:
+        draw.text((W // 2, y), ln, font=font, fill=(255, 255, 255),
+                  anchor="ma", stroke_width=3, stroke_fill=(0, 0, 0))
+        y += lh
     img.save(path)
 
 
