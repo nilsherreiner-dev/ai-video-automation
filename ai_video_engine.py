@@ -213,10 +213,15 @@ def generate_voiceover(script: str, video_id: int) -> str:
         audio_file = os.path.join(OUTPUT_DIR, f"video_{video_id}_voiceover.mp3")
         words_file = os.path.join(OUTPUT_DIR, f"video_{video_id}_words.json")
 
-        # Preferred: timestamped endpoint (enables karaoke captions)
+        # Preferred: timestamped endpoint (enables karaoke captions), with 1 retry
         ts_url = f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}/with-timestamps"
-        r = requests.post(ts_url, headers=headers, json=data, timeout=60)
-        if r.status_code == 200:
+        r = None
+        for attempt in range(2):
+            r = requests.post(ts_url, headers=headers, json=data, timeout=60)
+            if r.status_code == 200:
+                break
+            print(f"⚠️ Timestamp endpoint HTTP {r.status_code} (try {attempt + 1})")
+        if r is not None and r.status_code == 200:
             payload = r.json()
             import base64
             with open(audio_file, "wb") as f:
