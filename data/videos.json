@@ -1,0 +1,42 @@
+[
+  {
+    "run_id": "20260712-184934",
+    "slot": 1,
+    "created_at": "2026-07-12T18:49:34Z",
+    "title": "Inside King Charles's surprise Highgrove reunion with Prince Harry, Meghan Markle and their children after four years apart - Yahoo",
+    "source": "Yahoo Entertainment",
+    "keywords": [
+      "Royal gardens",
+      "Family embrace",
+      "Highgrove estate"
+    ],
+    "duration_sec": 85.9,
+    "captions": "karaoke",
+    "footage": "stock",
+    "clips": 3,
+    "script_preview": "[0:00-0:03] HOOK\nAfter FOUR YEARS of silence, King Charles just did something NO ONE saw coming with Harry and Meghan!\n\n[0:03-1:00] CONTENT\nThe palace walls jus",
+    "preview_file": "preview/video_1.mp4",
+    "youtube_id": null,
+    "upload_status": "pending"
+  },
+  {
+    "run_id": "20260712-185157",
+    "slot": 2,
+    "created_at": "2026-07-12T18:51:57Z",
+    "title": "Cyclospora, the \u2018Explosive Diarrhea\u2019 Parasite, Cases Reported in at Least 31 States: See the Map - TODAY.com",
+    "source": "TODAY",
+    "keywords": [
+      "microscope parasite",
+      "stomach pain",
+      "contaminated produce"
+    ],
+    "duration_sec": 94.5,
+    "captions": "karaoke",
+    "footage": "stock",
+    "clips": 3,
+    "script_preview": "[0:00-0:03] HOOK\nIf you've eaten fresh produce this week, you need to hear this RIGHT NOW.\n\n[0:03-1:00] CONTENT\nA parasite called Cyclospora is spreading across",
+    "preview_file": "preview/video_2.mp4",
+    "youtube_id": null,
+    "upload_status": "pending"
+  }
+]
