@@ -331,33 +331,61 @@ def upload_to_youtube(video_path: str, title: str, description: str, tags: List[
 # METRICS & LOGGING
 # ============================================================================
 
-def save_video_metadata(video_id: int, data: Dict):
-    """Save video metadata to JSON log"""
+DATA_FILE = os.path.join(SCRIPT_DIR, "data", "videos.json")
+
+
+def _video_duration(path: str) -> float:
+    """Duration of a rendered video in seconds (0 if unknown)."""
     try:
-        metrics_file = os.path.join(OUTPUT_DIR, "videos_log.json")
-        
+        out = subprocess.run(
+            ["ffprobe", "-v", "quiet", "-show_entries", "format=duration",
+             "-of", "json", path],
+            capture_output=True, text=True, check=True)
+        return round(float(json.loads(out.stdout)["format"]["duration"]), 1)
+    except Exception:
+        return 0.0
+
+
+def save_video_metadata(video_id: int, data: Dict):
+    """Append this run's video to the persistent repo log (data/videos.json)."""
+    try:
+        os.makedirs(os.path.dirname(DATA_FILE), exist_ok=True)
+
         videos = []
-        if os.path.exists(metrics_file):
-            with open(metrics_file, "r") as f:
-                videos = json.load(f)
-        
-        video_data = {
-            "id": video_id,
-            "timestamp": datetime.utcnow().isoformat(),
+        if os.path.exists(DATA_FILE):
+            try:
+                with open(DATA_FILE, "r") as f:
+                    videos = json.load(f)
+            except Exception:
+                videos = []
+
+        video_path = data.get("video_path") or ""
+        entry = {
+            "run_id": datetime.utcnow().strftime("%Y%m%d-%H%M%S"),
+            "slot": video_id,
+            "created_at": datetime.utcnow().isoformat(timespec="seconds") + "Z",
             "title": data.get("title", ""),
-            "trend": data.get("trend", ""),
-            "script_preview": data.get("script", "")[:100],
-            "status": "generated",
-            "scheduled_upload": f"{OPTIMAL_UPLOAD_HOUR:02d}:00 UTC"
+            "source": data.get("source", ""),
+            "keywords": data.get("keywords", []),
+            "duration_sec": _video_duration(video_path) if video_path else 0.0,
+            "captions": data.get("captions", "unknown"),   # karaoke | block
+            "footage": data.get("footage", "unknown"),     # stock | gradient
+            "clips": data.get("clips", 0),
+            "script_preview": (data.get("script", "") or "")[:160],
+            "preview_file": (f"preview/{os.path.basename(video_path)}"
+                             if video_path else ""),
+            "youtube_id": None,          # filled once uploads work
+            "upload_status": "pending",  # pending | uploaded | failed
         }
-        
-        videos.append(video_data)
-        
-        with open(metrics_file, "w") as f:
+
+        videos.append(entry)
+        videos = videos[-200:]  # keep the log bounded
+
+        with open(DATA_FILE, "w") as f:
             json.dump(videos, f, indent=2)
-        
-        print(f"✅ Metadata saved")
-    
+
+        print(f"✅ Metadata saved to data/videos.json ({len(videos)} total)")
+
     except Exception as e:
         print(f"⚠️ Metadata save error: {e}")
 
@@ -405,6 +433,7 @@ def run_daily_automation():
         
         # Assemble a real, watchable video (stock footage + synced captions)
         print("   🎬 Assembling video...")
+        keywords, bg_clips, word_timings, video_file = [], [], None, None
         try:
             from video_builder import build_video
             from stock_footage import get_background_clips
@@ -413,9 +442,7 @@ def run_daily_automation():
             clip_dir = os.path.join(OUTPUT_DIR, f"clips_{idx + 1}")
             bg_clips, credits = get_background_clips(
                 trend["title"], keywords, clip_dir, source="stock")
-            video_file = None
             # load word timings for karaoke captions if available
-            word_timings = None
             words_file = os.path.join(OUTPUT_DIR, f"video_{idx + 1}_words.json")
             if os.path.exists(words_file):
                 try:
@@ -436,11 +463,16 @@ def run_daily_automation():
             print(f"   ⚠️ Video assembly failed, skipping")
             continue
         
-        # Save metadata
+        # Save metadata (real facts about how this video was built)
         save_video_metadata(idx + 1, {
             "title": trend["title"],
-            "trend": trend["description"],
-            "script": script
+            "source": trend.get("source", ""),
+            "keywords": keywords,
+            "script": script,
+            "video_path": video_file,
+            "clips": len(bg_clips) if bg_clips else 0,
+            "footage": "stock" if bg_clips else "gradient",
+            "captions": "karaoke" if word_timings else "block",
         })
         
         videos_created += 1
