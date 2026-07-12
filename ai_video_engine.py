@@ -198,7 +198,8 @@ def generate_voiceover(script: str, video_id: int) -> str:
         from video_builder import clean_text, normalize_for_speech
         spoken = normalize_for_speech(clean_text(script))
 
-        voice_id = os.getenv("ELEVENLABS_VOICE_ID", "pNInz6obpgDQGcFmaJgB")  # Adam
+        # NOTE: use `or` — an env var that exists but is EMPTY must fall back too
+        voice_id = os.getenv("ELEVENLABS_VOICE_ID") or "pNInz6obpgDQGcFmaJgB"  # Adam
         headers = {"xi-api-key": ELEVENLABS_API_KEY, "Content-Type": "application/json"}
         data = {
             "text": spoken,
