@@ -1,555 +1,177 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="de">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Video Dashboard - NeuronOv3rload</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        :root {
-            --primary: #3b82f6;
-            --secondary: #8b5cf6;
-            --success: #10b981;
-            --danger: #ef4444;
-            --warning: #f59e0b;
-            --dark: #1f2937;
-            --light: #f3f4f6;
-            --border: #e5e7eb;
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: var(--light);
-            color: var(--dark);
-            line-height: 1.6;
-        }
-
-        header {
-            background: white;
-            border-bottom: 1px solid var(--border);
-            padding: 1.5rem;
-            position: sticky;
-            top: 0;
-            z-index: 50;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        }
-
-        .header-content {
-            max-width: 1400px;
-            margin: 0 auto;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 1rem;
-            flex-wrap: wrap;
-        }
-
-        .header-title {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-        }
-
-        .header-title h1 {
-            font-size: 1.875rem;
-            font-weight: bold;
-        }
-
-        .header-title p {
-            color: #6b7280;
-            font-size: 0.875rem;
-        }
-
-        .automation-status {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            padding: 0.75rem 1rem;
-            border-radius: 0.5rem;
-            background: #f0fdf4;
-            color: var(--success);
-            font-weight: 500;
-        }
-
-        .automation-status.running {
-            background: #fef3c7;
-            color: var(--warning);
-        }
-
-        .automation-status .dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: currentColor;
-            animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-        }
-
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 2rem 1rem;
-        }
-
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 1.5rem;
-            margin-bottom: 2rem;
-        }
-
-        .stat-card {
-            background: white;
-            padding: 1.5rem;
-            border-radius: 0.75rem;
-            border: 1px solid var(--border);
-            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-        }
-
-        .stat-card h3 {
-            color: #6b7280;
-            font-size: 0.875rem;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            margin-bottom: 0.5rem;
-            font-weight: 600;
-        }
-
-        .stat-card .value {
-            font-size: 2.25rem;
-            font-weight: bold;
-            color: var(--dark);
-            margin-bottom: 0.5rem;
-        }
-
-        .stat-card .trend {
-            font-size: 0.875rem;
-            color: var(--success);
-            font-weight: 500;
-        }
-
-        .stat-card .trend.down {
-            color: var(--danger);
-        }
-
-        .charts-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 2rem;
-            margin-bottom: 2rem;
-        }
-
-        .chart-container {
-            background: white;
-            padding: 1.5rem;
-            border-radius: 0.75rem;
-            border: 1px solid var(--border);
-            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-        }
-
-        .chart-container h2 {
-            font-size: 1.25rem;
-            margin-bottom: 1rem;
-            color: var(--dark);
-        }
-
-        .videos-section {
-            margin-bottom: 2rem;
-        }
-
-        .videos-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 1.5rem;
-            flex-wrap: wrap;
-            gap: 1rem;
-        }
-
-        .videos-header h2 {
-            font-size: 1.875rem;
-            font-weight: bold;
-        }
-
-        .videos-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 1.5rem;
-        }
-
-        .video-card {
-            background: white;
-            border-radius: 0.75rem;
-            overflow: hidden;
-            border: 1px solid var(--border);
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            transition: transform 0.2s, box-shadow 0.2s;
-        }
-
-        .video-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        }
-
-        .video-thumbnail {
-            width: 100%;
-            height: 160px;
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 3rem;
-            color: white;
-        }
-
-        .video-content {
-            padding: 1.25rem;
-        }
-
-        .video-title {
-            font-weight: bold;
-            color: var(--dark);
-            margin-bottom: 0.5rem;
-            font-size: 0.95rem;
-            line-height: 1.4;
-        }
-
-        .video-date {
-            font-size: 0.75rem;
-            color: #9ca3af;
-            margin-bottom: 1rem;
-        }
-
-        .video-stats {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 0.75rem;
-            margin-bottom: 1rem;
-        }
-
-        .video-stat {
-            background: var(--light);
-            padding: 0.75rem;
-            border-radius: 0.5rem;
-            font-size: 0.875rem;
-        }
-
-        .video-stat-label {
-            color: #6b7280;
-            font-size: 0.75rem;
-            text-transform: uppercase;
-            margin-bottom: 0.25rem;
-        }
-
-        .video-stat-value {
-            font-weight: bold;
-            font-size: 1.125rem;
-            color: var(--dark);
-        }
-
-        .scheduled-videos {
-            background: white;
-            padding: 1.5rem;
-            border-radius: 0.75rem;
-            border: 1px solid var(--border);
-            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-        }
-
-        .scheduled-videos h2 {
-            font-size: 1.25rem;
-            margin-bottom: 1.5rem;
-        }
-
-        .scheduled-item {
-            padding: 1rem;
-            border-left: 4px solid var(--primary);
-            margin-bottom: 1rem;
-            background: #f9fafb;
-            border-radius: 0.5rem;
-        }
-
-        .scheduled-item.warning {
-            border-left-color: var(--warning);
-        }
-
-        .scheduled-item.success {
-            border-left-color: var(--success);
-        }
-
-        .scheduled-title {
-            font-weight: 600;
-            margin-bottom: 0.25rem;
-        }
-
-        .scheduled-time {
-            font-size: 0.875rem;
-            color: #6b7280;
-        }
-
-        @media (max-width: 768px) {
-            .header-content {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-
-            .header-title h1 {
-                font-size: 1.5rem;
-            }
-
-            .stats-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .charts-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .videos-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .videos-header {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-        }
-
-        .footer {
-            text-align: center;
-            padding: 2rem;
-            color: #6b7280;
-            font-size: 0.875rem;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NeuronOv3rload — Pipeline Dashboard</title>
+<style>
+  :root{
+    --bg:#0b0b12; --card:#14141f; --line:#242435;
+    --txt:#e8e8f0; --muted:#8b8ba7;
+    --blue:#38bdf8; --purple:#a855f7; --ok:#22c55e; --warn:#f59e0b;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+    background:var(--bg);color:var(--txt);line-height:1.55;padding-bottom:60px;
+  }
+  header{
+    padding:24px 16px;border-bottom:1px solid var(--line);
+    background:linear-gradient(135deg,rgba(56,189,248,.08),rgba(168,85,247,.08));
+  }
+  .wrap{max-width:1100px;margin:0 auto;padding:0 16px}
+  h1{font-size:1.5rem;letter-spacing:-.02em}
+  .sub{color:var(--muted);font-size:.85rem;margin-top:2px}
+  .grid{display:grid;gap:14px;margin-top:22px}
+  .stats{grid-template-columns:repeat(auto-fit,minmax(160px,1fr))}
+  .card{
+    background:var(--card);border:1px solid var(--line);
+    border-radius:14px;padding:16px;
+  }
+  .label{color:var(--muted);font-size:.72rem;text-transform:uppercase;
+    letter-spacing:.06em;font-weight:600}
+  .value{font-size:1.9rem;font-weight:700;margin-top:6px}
+  .value.small{font-size:1.05rem;font-weight:600;color:var(--muted)}
+  .hint{font-size:.72rem;color:var(--muted);margin-top:4px}
+  .pending{
+    border-style:dashed;background:transparent;
+  }
+  .badge{
+    display:inline-block;padding:3px 9px;border-radius:999px;
+    font-size:.68rem;font-weight:700;letter-spacing:.03em;
+  }
+  .b-ok{background:rgba(34,197,94,.15);color:var(--ok)}
+  .b-warn{background:rgba(245,158,11,.15);color:var(--warn)}
+  .b-info{background:rgba(56,189,248,.15);color:var(--blue)}
+  h2{font-size:1.1rem;margin:30px 0 12px}
+  .vid{
+    background:var(--card);border:1px solid var(--line);border-radius:14px;
+    padding:16px;margin-bottom:12px;
+  }
+  .vid-title{font-weight:600;font-size:.98rem;margin-bottom:6px}
+  .meta{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0}
+  .chip{
+    background:#1c1c2b;border:1px solid var(--line);border-radius:8px;
+    padding:3px 9px;font-size:.72rem;color:var(--muted);
+  }
+  .chip b{color:var(--txt);font-weight:600}
+  .prev{color:var(--muted);font-size:.8rem;font-style:italic;margin-top:6px}
+  a.link{color:var(--blue);font-size:.8rem;text-decoration:none;font-weight:600}
+  .empty{color:var(--muted);text-align:center;padding:40px 0}
+  .note{
+    background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.25);
+    border-radius:12px;padding:14px;font-size:.85rem;color:#f5d9a8;margin-top:22px;
+  }
+  footer{color:var(--muted);font-size:.75rem;text-align:center;margin-top:34px}
+</style>
 </head>
 <body>
-    <header>
-        <div class="header-content">
-            <div class="header-title">
-                <h1>📊 Video Dashboard</h1>
-                <div>
-                    <p>AI-Powered Automation</p>
-                    <p style="font-size: 0.75rem;">NeuronOv3rload Channel</p>
-                </div>
-            </div>
-            <div class="automation-status running">
-                <span class="dot"></span>
-                Automation Active
-            </div>
-        </div>
-    </header>
+<header>
+  <div class="wrap">
+    <h1>⚡ NeuronOv3rload</h1>
+    <div class="sub">Pipeline Dashboard — echte Daten aus <code>data/videos.json</code></div>
+  </div>
+</header>
 
-    <main class="container">
-        <!-- Stats Section -->
-        <div class="stats-grid">
-            <div class="stat-card">
-                <h3>Total Views</h3>
-                <div class="value" id="totalViews">0</div>
-                <div class="trend">↑ 12% from last week</div>
-            </div>
-            <div class="stat-card">
-                <h3>Avg CTR</h3>
-                <div class="value" id="avgCTR">0%</div>
-                <div class="trend">↑ 8% improvement</div>
-            </div>
-            <div class="stat-card">
-                <h3>Avg Retention</h3>
-                <div class="value" id="avgRetention">0%</div>
-                <div class="trend">↑ 5% increase</div>
-            </div>
-            <div class="stat-card">
-                <h3>Subscribers</h3>
-                <div class="value" id="subscribers">0</div>
-                <div class="trend">↑ 15% growth</div>
-            </div>
-        </div>
+<main class="wrap">
+  <div class="grid stats" id="stats"></div>
 
-        <!-- Charts Section -->
-        <div class="charts-grid">
-            <div class="chart-container">
-                <h2>Views Trend</h2>
-                <canvas id="viewsChart"></canvas>
-            </div>
-            <div class="chart-container">
-                <h2>Engagement Rate</h2>
-                <canvas id="engagementChart"></canvas>
-            </div>
-        </div>
+  <h2>Produzierte Videos</h2>
+  <div id="videos"><div class="empty">Lade…</div></div>
 
-        <!-- Videos Section -->
-        <div class="videos-section">
-            <div class="videos-header">
-                <h2>Recent Videos</h2>
-            </div>
-            <div class="videos-grid" id="videosGrid">
-                <!-- Videos will be populated here -->
-            </div>
-        </div>
+  <div class="note" id="note"></div>
 
-        <!-- Scheduled Videos -->
-        <div class="scheduled-videos">
-            <h2>📅 Scheduled Videos</h2>
-            <div class="scheduled-item warning">
-                <div class="scheduled-title">Video #4: Google's $100B Mistake</div>
-                <div class="scheduled-time">⏰ Uploading Tomorrow at 2:00 PM UTC</div>
-            </div>
-            <div class="scheduled-item warning">
-                <div class="scheduled-title">Video #5: Scientists Found IMPOSSIBLE</div>
-                <div class="scheduled-time">⏰ Uploading in 2 days at 2:00 PM UTC</div>
-            </div>
-            <div class="scheduled-item warning">
-                <div class="scheduled-title">Video #6: Elon's Hidden Announcement</div>
-                <div class="scheduled-time">⏰ Uploading in 3 days at 2:00 PM UTC</div>
-            </div>
-        </div>
-    </main>
+  <footer>
+    Zahlen zu Views/CTR/Abos erscheinen erst, wenn Videos tatsächlich
+    auf YouTube hochgeladen sind. Bis dahin werden hier bewusst
+    keine Schätzwerte angezeigt.
+  </footer>
+</main>
 
-    <footer class="footer">
-        <p>🤖 Fully Automated AI Video Generation System</p>
-        <p>Videos auto-upload daily at 2:00 PM UTC for optimal engagement</p>
-    </footer>
+<script>
+const fmtDate = iso => {
+  if(!iso) return "—";
+  const d = new Date(iso);
+  return d.toLocaleString('de-DE',{day:'2-digit',month:'2-digit',
+    hour:'2-digit',minute:'2-digit'});
+};
 
-    <script>
-        // Mock data - in production, fetch from API/JSON
-        const mockVideos = [
-            {
-                id: 1,
-                title: "Your Brain is TRICKING You",
-                date: new Date(Date.now() - 86400000).toLocaleDateString(),
-                views: 12400,
-                ctr: 14.2,
-                retention: 68,
-                emoji: "🧠"
-            },
-            {
-                id: 2,
-                title: "OpenAI Just Changed The Game",
-                date: new Date(Date.now() - 172800000).toLocaleDateString(),
-                views: 8900,
-                ctr: 11.5,
-                retention: 62,
-                emoji: "🤖"
-            },
-            {
-                id: 3,
-                title: "Scientist Found IMPOSSIBLE in Arctic",
-                date: new Date(Date.now() - 259200000).toLocaleDateString(),
-                views: 15600,
-                ctr: 16.8,
-                retention: 71,
-                emoji: "❄️"
-            }
-        ];
+function statCard(label, value, hint, pending){
+  return `<div class="card ${pending?'pending':''}">
+    <div class="label">${label}</div>
+    <div class="value ${pending?'small':''}">${value}</div>
+    ${hint?`<div class="hint">${hint}</div>`:''}
+  </div>`;
+}
 
-        // Initialize
-        function init() {
-            loadStats();
-            loadVideos();
-            loadCharts();
-        }
+function render(videos){
+  const total = videos.length;
+  const uploaded = videos.filter(v=>v.upload_status==='uploaded').length;
+  const last = total ? videos[videos.length-1] : null;
+  const karaoke = videos.filter(v=>v.captions==='karaoke').length;
+  const stock = videos.filter(v=>v.footage==='stock').length;
+  const avgDur = total
+    ? (videos.reduce((s,v)=>s+(v.duration_sec||0),0)/total).toFixed(0)+'s'
+    : '—';
 
-        function loadStats() {
-            const totalViews = mockVideos.reduce((sum, v) => sum + v.views, 0);
-            const avgCTR = (mockVideos.reduce((sum, v) => sum + v.ctr, 0) / mockVideos.length).toFixed(1);
-            const avgRetention = Math.round(mockVideos.reduce((sum, v) => sum + v.retention, 0) / mockVideos.length);
+  document.getElementById('stats').innerHTML = [
+    statCard('Videos gebaut', total, total?`zuletzt ${fmtDate(last.created_at)}`:'', false),
+    statCard('Ø Länge', avgDur, total?`${karaoke}/${total} mit Karaoke`:'', false),
+    statCard('Stock-Footage', total?`${stock}/${total}`:'—', 'echte Clips statt Gradient', false),
+    statCard('Auf YouTube', uploaded ? uploaded : 'Noch keine',
+             uploaded ? '' : 'OAuth ausstehend', !uploaded),
+    statCard('Views', 'Keine Daten', 'verfügbar nach Upload', true),
+    statCard('Abonnenten', 'Keine Daten', 'verfügbar nach Upload', true),
+  ].join('');
 
-            document.getElementById('totalViews').textContent = totalViews.toLocaleString();
-            document.getElementById('avgCTR').textContent = avgCTR + '%';
-            document.getElementById('avgRetention').textContent = avgRetention + '%';
-            document.getElementById('subscribers').textContent = '1.2K';
-        }
+  const box = document.getElementById('videos');
+  if(!total){
+    box.innerHTML = `<div class="empty">Noch keine Videos protokolliert.<br>
+      Läuft der Workflow, erscheinen sie hier automatisch.</div>`;
+    return;
+  }
+  box.innerHTML = videos.slice().reverse().map(v=>{
+    const up = v.upload_status==='uploaded'
+      ? `<span class="badge b-ok">auf YouTube</span>`
+      : `<span class="badge b-warn">nicht hochgeladen</span>`;
+    const cap = v.captions==='karaoke'
+      ? `<span class="badge b-info">Karaoke</span>`
+      : `<span class="badge b-warn">Block-Untertitel</span>`;
+    const yt = v.youtube_id
+      ? `<a class="link" href="https://youtu.be/${v.youtube_id}" target="_blank">→ YouTube</a>` : '';
+    const pv = v.preview_file
+      ? `<a class="link" href="${v.preview_file}" target="_blank">→ Preview</a>` : '';
+    return `<div class="vid">
+      <div class="vid-title">${v.title||'(ohne Titel)'}</div>
+      <div>${up} ${cap}</div>
+      <div class="meta">
+        <span class="chip">Gebaut <b>${fmtDate(v.created_at)}</b></span>
+        <span class="chip">Länge <b>${v.duration_sec||'?'}s</b></span>
+        <span class="chip">Clips <b>${v.clips??0}</b></span>
+        ${v.source?`<span class="chip">Quelle <b>${v.source}</b></span>`:''}
+        ${(v.keywords&&v.keywords.length)
+          ?`<span class="chip">Footage <b>${v.keywords.join(', ')}</b></span>`:''}
+      </div>
+      ${v.script_preview?`<div class="prev">„${v.script_preview}…"</div>`:''}
+      <div style="margin-top:8px">${pv} ${yt}</div>
+    </div>`;
+  }).join('');
+}
 
-        function loadVideos() {
-            const grid = document.getElementById('videosGrid');
-            grid.innerHTML = mockVideos.map(video => `
-                <div class="video-card">
-                    <div class="video-thumbnail">${video.emoji}</div>
-                    <div class="video-content">
-                        <div class="video-title">${video.title}</div>
-                        <div class="video-date">Posted: ${video.date}</div>
-                        <div class="video-stats">
-                            <div class="video-stat">
-                                <div class="video-stat-label">Views</div>
-                                <div class="video-stat-value">${video.views.toLocaleString()}</div>
-                            </div>
-                            <div class="video-stat">
-                                <div class="video-stat-label">CTR</div>
-                                <div class="video-stat-value">${video.ctr}%</div>
-                            </div>
-                            <div class="video-stat">
-                                <div class="video-stat-label">Retention</div>
-                                <div class="video-stat-value">${video.retention}%</div>
-                            </div>
-                            <div class="video-stat">
-                                <div class="video-stat-label">Engagement</div>
-                                <div class="video-stat-value">${Math.round(video.views * 0.05)}</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        function loadCharts() {
-            const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-            const viewData = days.map(() => Math.floor(Math.random() * 15000) + 5000);
-            const engagementData = days.map(() => Math.floor(Math.random() * 15) + 8);
-
-            // Views Chart
-            new Chart(document.getElementById('viewsChart'), {
-                type: 'line',
-                data: {
-                    labels: days,
-                    datasets: [{
-                        label: 'Views',
-                        data: viewData,
-                        borderColor: '#3b82f6',
-                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                        borderWidth: 2,
-                        fill: true,
-                        tension: 0.4
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: true,
-                    plugins: { legend: { display: false } },
-                    scales: { y: { beginAtZero: true } }
-                }
-            });
-
-            // Engagement Chart
-            new Chart(document.getElementById('engagementChart'), {
-                type: 'bar',
-                data: {
-                    labels: days,
-                    datasets: [{
-                        label: 'Engagement %',
-                        data: engagementData,
-                        backgroundColor: '#8b5cf6'
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: true,
-                    plugins: { legend: { display: false } },
-                    scales: { y: { beginAtZero: true } }
-                }
-            });
-        }
-
-        // Load on page ready
-        document.addEventListener('DOMContentLoaded', init);
-    </script>
+fetch('data/videos.json?ts='+Date.now())
+  .then(r=>{ if(!r.ok) throw new Error('no data'); return r.json(); })
+  .then(v=>{
+    render(Array.isArray(v)?v:[]);
+    document.getElementById('note').innerHTML =
+      '⏳ <b>Upload steht noch aus.</b> Sobald die YouTube-OAuth abgeschlossen ist, ' +
+      'werden die Videos automatisch hochgeladen und hier mit Link angezeigt.';
+  })
+  .catch(()=>{
+    render([]);
+    document.getElementById('note').innerHTML =
+      '⚠️ <b>Noch keine <code>data/videos.json</code> im Repo.</b> ' +
+      'Sie entsteht beim nächsten Workflow-Lauf automatisch.';
+  });
+</script>
 </body>
 </html>
