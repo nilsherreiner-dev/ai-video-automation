@@ -225,31 +225,51 @@ def upload_all_videos():
     # NOTE: no channels().list() call here — it needs the youtube.readonly scope.
     # Uploads go to the channel that authorized the token, so it is not needed.
     
-    # Load video metadata
-    metadata_file = os.path.join(output_dir, "videos_log.json")
+    # Load metadata from the persistent repo log (written by ai_video_engine.py)
+    data_file = os.path.join(SCRIPT_DIR, "data", "videos.json")
     metadata_map = {}
-    if os.path.exists(metadata_file):
-        with open(metadata_file, "r") as f:
-            videos_data = json.load(f)
-            for v in videos_data:
-                metadata_map[v.get("id")] = v
-    
+    if os.path.exists(data_file):
+        try:
+            with open(data_file, "r") as f:
+                for v in json.load(f):
+                    if v.get("upload_status") != "uploaded":
+                        metadata_map[v.get("slot")] = v   # latest pending per slot
+        except Exception as e:
+            print(f"⚠️ Could not read data/videos.json: {e}")
+    if not metadata_map:
+        print("⚠️ No pending metadata found — titles may fall back to defaults")
+
     # Upload each video
     uploaded_count = 0
     for video_file in sorted(videos):
         try:
-            # Extract video ID from filename
+            # Extract slot number from filename (video_1.mp4 -> 1)
             video_id = int(video_file.split("_")[1].split(".")[0])
-            
-            # Get metadata
+
             metadata = metadata_map.get(video_id, {})
-            title = metadata.get("title", f"Trending Video #{video_id}")
+            raw_title = (metadata.get("title") or "").strip()
+
+            if raw_title:
+                # YouTube hard-caps titles at 100 chars
+                title = raw_title if len(raw_title) <= 95 else raw_title[:92].rstrip() + "..."
+                title = f"{title} #shorts"
+                if len(title) > 100:
+                    title = raw_title[:88].rstrip() + "... #shorts"
+            else:
+                title = f"Trending Video #{video_id} #shorts"
+
+            keywords = metadata.get("keywords") or []
+            source = metadata.get("source") or ""
             description = (
-                f"{metadata.get('trend', 'Trending viral video')}\n\n"
-                "🤖 AI-generated content | Subscribe for daily viral videos!\n"
-                "#viral #trending #shorts #ai #facts"
+                f"{raw_title}\n\n"
+                + (f"Source: {source}\n" if source else "")
+                + "\nFootage: Pexels (royalty-free)\n"
+                "Voiceover: AI-generated\n\n"
+                "Subscribe for daily trending shorts!\n"
+                "#shorts #viral #trending #news"
             )
-            tags = ["viral", "trending", "AI", "shorts", "facts", "NeuronOv3rload"]
+            tags = ["shorts", "viral", "trending", "news", "NeuronOverload"]
+            tags += [k for k in keywords if isinstance(k, str)][:3]
             
             video_path = os.path.join(output_dir, video_file)
 
