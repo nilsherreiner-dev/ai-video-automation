@@ -122,7 +122,7 @@ def upload_video(youtube, video_path: str, title: str, description: str, tags: l
                 "defaultAudioLanguage": "en"
             },
             "status": {
-                "privacyStatus": "public",
+                "privacyStatus": "unlisted",   # review in dashboard, then publish
                 "madeForKids": False,
                 "selfDeclaredMadeForKids": False,
                 "embeddable": True
@@ -161,14 +161,7 @@ def upload_video(youtube, video_path: str, title: str, description: str, tags: l
         print(f"✅ Video uploaded successfully!")
         print(f"   Video ID: {video_id}")
         print(f"   URL: {video_url}")
-        
-        send_telegram_alert(
-            f"🎬 VIDEO UPLOADED TO YOUTUBE!\n"
-            f"📌 {title}\n"
-            f"🔗 {video_url}",
-            "🎬"
-        )
-        
+
         return video_id
     
     except Exception as e:
@@ -179,6 +172,27 @@ def upload_video(youtube, video_path: str, title: str, description: str, tags: l
 # ============================================================================
 # MAIN - UPLOAD ALL VIDEOS FROM OUTPUT
 # ============================================================================
+
+def send_review_request(title: str, youtube_id: str):
+    """Telegram message with inline buttons to publish or delete the video."""
+    url = f"https://youtu.be/{youtube_id}"
+    text = (f"🎬 Neues Video (nicht gelistet)\n\n"
+            f"📌 {title}\n{url}\n\n"
+            f"Ansehen und entscheiden:")
+    buttons = [[
+        {"text": "🚀 Veröffentlichen", "callback_data": f"publish:{youtube_id}"},
+        {"text": "🗑️ Löschen", "callback_data": f"reject:{youtube_id}"},
+    ]]
+    try:
+        requests.post(
+            f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage",
+            json={"chat_id": TELEGRAM_CHAT_ID, "text": text,
+                  "reply_markup": {"inline_keyboard": buttons}},
+            timeout=10)
+        print("✅ Review-Buttons per Telegram gesendet")
+    except Exception as e:
+        print(f"⚠️ Telegram buttons failed: {e}")
+
 
 def _mark_uploaded(slot: int, youtube_id: str):
     """Write the YouTube id + status back into data/videos.json (for the dashboard)."""
@@ -248,13 +262,13 @@ def upload_all_videos():
 
             metadata = metadata_map.get(video_id, {})
             raw_title = (metadata.get("title") or "").strip()
+            hook_title = (metadata.get("youtube_title") or "").strip()
 
-            if raw_title:
-                # YouTube hard-caps titles at 100 chars
-                title = raw_title if len(raw_title) <= 95 else raw_title[:92].rstrip() + "..."
-                title = f"{title} #shorts"
-                if len(title) > 100:
-                    title = raw_title[:88].rstrip() + "... #shorts"
+            base = hook_title or raw_title
+            if base:
+                if len(base) > 88:
+                    base = base[:85].rstrip() + "..."
+                title = f"{base} #shorts"
             else:
                 title = f"Trending Video #{video_id} #shorts"
 
@@ -278,6 +292,7 @@ def upload_all_videos():
             if yt_id:
                 uploaded_count += 1
                 _mark_uploaded(video_id, yt_id)
+                send_review_request(title, yt_id)
 
         except Exception as e:
             print(f"⚠️ Error processing {video_file}: {e}")
