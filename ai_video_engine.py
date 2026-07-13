@@ -10,6 +10,7 @@ AI Video Automation Engine - COMPLETE VERSION
 """
 
 import os
+import re
 import json
 import subprocess
 from datetime import datetime, time
@@ -27,6 +28,12 @@ YOUTUBE_API_KEY = os.getenv("YOUTUBE_API_KEY")
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
+
+# Voiceover pace. 1.0 = original. 1.10-1.20 = punchy Shorts pace.
+try:
+    SPEECH_SPEED = float(os.getenv("SPEECH_SPEED") or "1.12")
+except ValueError:
+    SPEECH_SPEED = 1.12
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 OUTPUT_DIR = os.path.join(SCRIPT_DIR, "output")
@@ -96,21 +103,24 @@ def generate_video_script(trend_topic: Dict) -> str:
         
         client = Anthropic(api_key=ANTHROPIC_API_KEY)
         
-        prompt = f"""Generate a viral YouTube Shorts script (60-90 seconds) based on this trending topic.
+        prompt = f"""Write a viral YouTube Shorts voiceover script about this topic.
 
 TRENDING TOPIC: {trend_topic['title']}
 DESCRIPTION: {trend_topic.get('description', 'N/A')}
 
-REQUIREMENTS:
-1. Hook in first 3 seconds (must grab attention IMMEDIATELY)
-2. Clear, engaging voiceover script
-3. Factual but highly entertaining
-4. Include strong CTA at end
-5. Format: [0:00-0:03] HOOK, [0:03-1:00] CONTENT, [1:00-1:15] CTA
-6. MUST be under 90 seconds when read aloud
-7. Make it shareable and comment-worthy
+STYLE — this is read aloud FAST by an energetic narrator:
+- Punchy hook in the first sentence. No throat-clearing.
+- SHORT sentences. Aim for 6-12 words each. No long clauses.
+- NO ellipses (...), NO dashes (—), NO stage directions, NO "dramatic pause".
+  Those create dead air and kill the pacing.
+- Plain punctuation only: periods, commas, question marks.
+- Concrete facts and numbers beat adjectives.
+- End with a short call to action (max 6 words).
+- 45-70 seconds when read aloud at a fast pace.
+- If the topic is tragic (death, war, disaster), stay factual and respectful.
+  Never sensationalize a tragedy.
 
-Return ONLY the script, no formatting or extra text."""
+Return ONLY the spoken words. No labels, no timestamps, no formatting."""
 
         response = client.messages.create(
             model="claude-sonnet-4-5",
@@ -140,6 +150,42 @@ Return ONLY the script, no formatting or extra text."""
 # VOICE GENERATION (ElevenLabs)
 # ============================================================================
 
+def generate_youtube_title(trend_topic: Dict, script: str) -> str:
+    """Ask Claude for a punchy Shorts title (not the raw news headline)."""
+    try:
+        from anthropic import Anthropic
+        client = Anthropic(api_key=ANTHROPIC_API_KEY)
+        prompt = (
+            "Write ONE YouTube Shorts title for this video.\n"
+            "Rules:\n"
+            "- Max 70 characters\n"
+            "- Curiosity hook, not a news headline\n"
+            "- No source names, no quotes, no emojis, no hashtags\n"
+            "- Respectful and factual if the topic is tragic (death, war, disaster) — "
+            "  never sensationalize a tragedy\n"
+            "- Return ONLY the title, nothing else\n\n"
+            f"Topic: {trend_topic['title']}\n"
+            f"Script: {script[:400]}"
+        )
+        resp = client.messages.create(
+            model="claude-sonnet-4-5", max_tokens=80,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        text = ""
+        for block in resp.content:
+            if getattr(block, "type", None) == "text":
+                text = block.text
+                break
+        title = text.strip().strip('"').strip()
+        title = re.sub(r"\s+", " ", title)
+        if not title or len(title) > 90:
+            return ""
+        return title
+    except Exception as e:
+        print(f"⚠️ Title generation failed: {e}")
+        return ""
+
+
 def extract_keywords(trend_topic: Dict) -> List[str]:
     """Ask Claude for 3 short visual search terms for stock footage."""
     try:
@@ -165,6 +211,24 @@ def extract_keywords(trend_topic: Dict) -> List[str]:
     except Exception as e:
         print(f"⚠️ Keyword extraction failed: {e}")
         return ["news", "city", "technology"]
+
+
+def _speed_up_audio(audio_path: str, factor: float) -> bool:
+    """Speed up the voiceover in place (pitch-preserving). Returns True on success."""
+    if factor <= 1.001:
+        return False
+    try:
+        tmp = audio_path + ".fast.mp3"
+        subprocess.run(
+            ["ffmpeg", "-y", "-i", audio_path,
+             "-filter:a", f"atempo={factor:.3f}",
+             "-c:a", "libmp3lame", "-b:a", "192k", tmp],
+            check=True, capture_output=True)
+        os.replace(tmp, audio_path)
+        return True
+    except Exception as e:
+        print(f"⚠️ Speed-up failed ({e}) — keeping original pace")
+        return False
 
 
 def _words_from_alignment(alignment: dict):
@@ -227,9 +291,16 @@ def generate_voiceover(script: str, video_id: int) -> str:
             import base64
             with open(audio_file, "wb") as f:
                 f.write(base64.b64decode(payload["audio_base64"]))
+
             alignment = payload.get("alignment") or payload.get("normalized_alignment")
-            if alignment:
-                words = _words_from_alignment(alignment)
+            words = _words_from_alignment(alignment) if alignment else []
+
+            # punchier pacing: speed up audio, then squeeze timings by the same factor
+            if _speed_up_audio(audio_file, SPEECH_SPEED):
+                words = [(w, s / SPEECH_SPEED, e / SPEECH_SPEED) for w, s, e in words]
+                print(f"⚡ Tempo x{SPEECH_SPEED}")
+
+            if words:
                 with open(words_file, "w") as f:
                     json.dump(words, f)
                 print(f"✅ Voiceover + {len(words)} word timings")
@@ -244,6 +315,8 @@ def generate_voiceover(script: str, video_id: int) -> str:
         if resp.status_code == 200:
             with open(audio_file, "wb") as f:
                 f.write(resp.content)
+            if _speed_up_audio(audio_file, SPEECH_SPEED):
+                print(f"⚡ Tempo x{SPEECH_SPEED}")
             print(f"✅ Voiceover generated: {audio_file}")
             return audio_file
         print(f"❌ ElevenLabs error: {resp.text}")
@@ -366,6 +439,7 @@ def save_video_metadata(video_id: int, data: Dict):
             "slot": video_id,
             "created_at": datetime.utcnow().isoformat(timespec="seconds") + "Z",
             "title": data.get("title", ""),
+            "youtube_title": data.get("youtube_title", ""),
             "source": data.get("source", ""),
             "keywords": data.get("keywords", []),
             "duration_sec": _video_duration(video_path) if video_path else 0.0,
@@ -465,11 +539,21 @@ def run_daily_automation():
             continue
         
         # Save metadata (real facts about how this video was built)
+        yt_title = generate_youtube_title(trend, script)
+        if yt_title:
+            print(f"   📌 Title: {yt_title}")
+        try:
+            from video_builder import clean_text
+            clean_preview = clean_text(script)
+        except Exception:
+            clean_preview = script
+
         save_video_metadata(idx + 1, {
             "title": trend["title"],
+            "youtube_title": yt_title,
             "source": trend.get("source", ""),
             "keywords": keywords,
-            "script": script,
+            "script": clean_preview,
             "video_path": video_file,
             "clips": len(bg_clips) if bg_clips else 0,
             "footage": "stock" if bg_clips else "gradient",
