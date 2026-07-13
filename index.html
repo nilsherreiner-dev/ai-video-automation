@@ -3,72 +3,75 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>NeuronOv3rload — Pipeline Dashboard</title>
+<title>NeuronOverload — Pipeline Dashboard</title>
 <style>
   :root{
     --bg:#0b0b12; --card:#14141f; --line:#242435;
     --txt:#e8e8f0; --muted:#8b8ba7;
-    --blue:#38bdf8; --purple:#a855f7; --ok:#22c55e; --warn:#f59e0b;
+    --blue:#38bdf8; --purple:#a855f7; --ok:#22c55e; --warn:#f59e0b; --red:#ef4444;
   }
   *{margin:0;padding:0;box-sizing:border-box}
-  body{
-    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
-    background:var(--bg);color:var(--txt);line-height:1.55;padding-bottom:60px;
-  }
-  header{
-    padding:24px 16px;border-bottom:1px solid var(--line);
-    background:linear-gradient(135deg,rgba(56,189,248,.08),rgba(168,85,247,.08));
-  }
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+    background:var(--bg);color:var(--txt);line-height:1.55;padding-bottom:60px}
+  header{padding:22px 16px;border-bottom:1px solid var(--line);
+    background:linear-gradient(135deg,rgba(56,189,248,.08),rgba(168,85,247,.08))}
   .wrap{max-width:1100px;margin:0 auto;padding:0 16px}
   h1{font-size:1.5rem;letter-spacing:-.02em}
   .sub{color:var(--muted);font-size:.85rem;margin-top:2px}
-  .grid{display:grid;gap:14px;margin-top:22px}
-  .stats{grid-template-columns:repeat(auto-fit,minmax(160px,1fr))}
-  .card{
-    background:var(--card);border:1px solid var(--line);
-    border-radius:14px;padding:16px;
-  }
+  .grid{display:grid;gap:14px;margin-top:20px}
+  .stats{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px}
   .label{color:var(--muted);font-size:.72rem;text-transform:uppercase;
     letter-spacing:.06em;font-weight:600}
-  .value{font-size:1.9rem;font-weight:700;margin-top:6px}
-  .value.small{font-size:1.05rem;font-weight:600;color:var(--muted)}
+  .value{font-size:1.8rem;font-weight:700;margin-top:6px}
+  .value.small{font-size:1rem;font-weight:600;color:var(--muted)}
   .hint{font-size:.72rem;color:var(--muted);margin-top:4px}
-  .pending{
-    border-style:dashed;background:transparent;
-  }
-  .badge{
-    display:inline-block;padding:3px 9px;border-radius:999px;
-    font-size:.68rem;font-weight:700;letter-spacing:.03em;
-  }
+  .pending{border-style:dashed;background:transparent}
+  .badge{display:inline-block;padding:3px 9px;border-radius:999px;
+    font-size:.68rem;font-weight:700;margin-right:4px}
   .b-ok{background:rgba(34,197,94,.15);color:var(--ok)}
   .b-warn{background:rgba(245,158,11,.15);color:var(--warn)}
   .b-info{background:rgba(56,189,248,.15);color:var(--blue)}
-  h2{font-size:1.1rem;margin:30px 0 12px}
-  .vid{
-    background:var(--card);border:1px solid var(--line);border-radius:14px;
-    padding:16px;margin-bottom:12px;
-  }
+  .b-mut{background:rgba(139,139,167,.15);color:var(--muted)}
+  h2{font-size:1.1rem;margin:28px 0 12px;display:flex;justify-content:space-between;
+    align-items:center;gap:10px;flex-wrap:wrap}
+  .vid{background:var(--card);border:1px solid var(--line);border-radius:14px;
+    padding:16px;margin-bottom:12px}
   .vid-title{font-weight:600;font-size:.98rem;margin-bottom:6px}
+  .vid-sub{color:var(--muted);font-size:.78rem;margin-bottom:8px}
   .meta{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0}
-  .chip{
-    background:#1c1c2b;border:1px solid var(--line);border-radius:8px;
-    padding:3px 9px;font-size:.72rem;color:var(--muted);
-  }
+  .chip{background:#1c1c2b;border:1px solid var(--line);border-radius:8px;
+    padding:3px 9px;font-size:.72rem;color:var(--muted)}
   .chip b{color:var(--txt);font-weight:600}
   .prev{color:var(--muted);font-size:.8rem;font-style:italic;margin-top:6px}
+  .row{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;align-items:center}
   a.link{color:var(--blue);font-size:.8rem;text-decoration:none;font-weight:600}
+  button{font:inherit;cursor:pointer;border-radius:9px;padding:7px 13px;
+    font-size:.78rem;font-weight:600;border:1px solid var(--line);
+    background:#1c1c2b;color:var(--txt)}
+  button:hover{border-color:var(--blue)}
+  button:disabled{opacity:.45;cursor:not-allowed}
+  .btn-go{background:var(--ok);color:#052e16;border-color:transparent}
+  .btn-del{background:transparent;color:var(--red);border-color:rgba(239,68,68,.35)}
+  .btn-sm{padding:5px 10px;font-size:.72rem}
   .empty{color:var(--muted);text-align:center;padding:40px 0}
-  .note{
-    background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.25);
-    border-radius:12px;padding:14px;font-size:.85rem;color:#f5d9a8;margin-top:22px;
-  }
-  footer{color:var(--muted);font-size:.75rem;text-align:center;margin-top:34px}
+  .note{background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.25);
+    border-radius:12px;padding:14px;font-size:.85rem;color:#f5d9a8;margin-top:20px}
+  .setup{background:rgba(56,189,248,.06);border:1px solid rgba(56,189,248,.25);
+    border-radius:12px;padding:14px;margin-top:18px;font-size:.85rem}
+  .setup input{width:100%;padding:9px;margin-top:8px;border-radius:8px;
+    border:1px solid var(--line);background:#0f0f18;color:var(--txt);font-size:.85rem}
+  .setup summary{cursor:pointer;color:var(--blue);font-weight:600}
+  .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:20px;
+    background:#1c1c2b;border:1px solid var(--line);padding:11px 18px;
+    border-radius:10px;font-size:.85rem;display:none;z-index:99;max-width:90%}
+  footer{color:var(--muted);font-size:.75rem;text-align:center;margin-top:30px}
 </style>
 </head>
 <body>
 <header>
   <div class="wrap">
-    <h1>⚡ NeuronOv3rload</h1>
+    <h1>⚡ NeuronOverload</h1>
     <div class="sub">Pipeline Dashboard — echte Daten aus <code>data/videos.json</code></div>
   </div>
 </header>
@@ -76,17 +79,20 @@
 <main class="wrap">
   <div class="grid stats" id="stats"></div>
 
-  <h2>Produzierte Videos</h2>
+  <h2>
+    <span>Produzierte Videos</span>
+  </h2>
   <div id="videos"><div class="empty">Lade…</div></div>
 
   <div class="note" id="note"></div>
 
   <footer>
-    Zahlen zu Views/CTR/Abos erscheinen erst, wenn Videos tatsächlich
-    auf YouTube hochgeladen sind. Bis dahin werden hier bewusst
-    keine Schätzwerte angezeigt.
+    Uploads sind <b>nicht gelistet</b>. Freigabe erfolgt über die Telegram-Buttons.<br>
+    Views/Abos erscheinen, sobald YouTube dafür Daten liefert.
   </footer>
 </main>
+
+<div class="toast" id="toast"></div>
 
 <script>
 const fmtDate = iso => {
@@ -96,64 +102,66 @@ const fmtDate = iso => {
     hour:'2-digit',minute:'2-digit'});
 };
 
-function statCard(label, value, hint, pending){
+function statCard(label,value,hint,pending){
   return `<div class="card ${pending?'pending':''}">
     <div class="label">${label}</div>
     <div class="value ${pending?'small':''}">${value}</div>
-    ${hint?`<div class="hint">${hint}</div>`:''}
-  </div>`;
+    ${hint?`<div class="hint">${hint}</div>`:''}</div>`;
 }
 
 function render(videos){
-  const total = videos.length;
-  const uploaded = videos.filter(v=>v.upload_status==='uploaded').length;
-  const last = total ? videos[videos.length-1] : null;
-  const karaoke = videos.filter(v=>v.captions==='karaoke').length;
-  const stock = videos.filter(v=>v.footage==='stock').length;
-  const avgDur = total
-    ? (videos.reduce((s,v)=>s+(v.duration_sec||0),0)/total).toFixed(0)+'s'
-    : '—';
+  const total=videos.length;
+  const onYt=videos.filter(v=>v.youtube_id).length;
+  const pub=videos.filter(v=>v.upload_status==='public').length;
+  const wait=onYt-pub;
+  const last=total?videos[videos.length-1]:null;
+  const avg=total?(videos.reduce((s,v)=>s+(v.duration_sec||0),0)/total).toFixed(0)+'s':'—';
 
-  document.getElementById('stats').innerHTML = [
-    statCard('Videos gebaut', total, total?`zuletzt ${fmtDate(last.created_at)}`:'', false),
-    statCard('Ø Länge', avgDur, total?`${karaoke}/${total} mit Karaoke`:'', false),
-    statCard('Stock-Footage', total?`${stock}/${total}`:'—', 'echte Clips statt Gradient', false),
-    statCard('Auf YouTube', uploaded ? uploaded : 'Noch keine',
-             uploaded ? '' : 'OAuth ausstehend', !uploaded),
-    statCard('Views', 'Keine Daten', 'verfügbar nach Upload', true),
-    statCard('Abonnenten', 'Keine Daten', 'verfügbar nach Upload', true),
+  document.getElementById('stats').innerHTML=[
+    statCard('Videos gebaut',total,total?`zuletzt ${fmtDate(last.created_at)}`:'',false),
+    statCard('Ø Länge',avg,'',false),
+    statCard('Auf YouTube',onYt,wait?`${wait} wartet auf Freigabe`:'',false),
+    statCard('Öffentlich',pub,pub?'':'noch nichts veröffentlicht',!pub),
+    statCard('Views','Keine Daten','verfügbar nach Veröffentlichung',true),
   ].join('');
 
-  const box = document.getElementById('videos');
+  const box=document.getElementById('videos');
   if(!total){
-    box.innerHTML = `<div class="empty">Noch keine Videos protokolliert.<br>
-      Läuft der Workflow, erscheinen sie hier automatisch.</div>`;
-    return;
+    box.innerHTML='<div class="empty">Noch keine Videos protokolliert.</div>';
+      return;
   }
-  box.innerHTML = videos.slice().reverse().map(v=>{
-    const up = v.upload_status==='uploaded'
-      ? `<span class="badge b-ok">auf YouTube</span>`
-      : `<span class="badge b-warn">nicht hochgeladen</span>`;
-    const cap = v.captions==='karaoke'
-      ? `<span class="badge b-info">Karaoke</span>`
-      : `<span class="badge b-warn">Block-Untertitel</span>`;
-    const yt = v.youtube_id
-      ? `<a class="link" href="https://youtu.be/${v.youtube_id}" target="_blank">→ YouTube</a>` : '';
-    const pv = v.preview_file
-      ? `<a class="link" href="${v.preview_file}" target="_blank">→ Preview</a>` : '';
+  box.innerHTML=videos.slice().reverse().map(v=>{
+    const isPub=v.upload_status==='public';
+    const onYT=!!v.youtube_id;
+    const state=isPub
+      ? '<span class="badge b-ok">öffentlich</span>'
+      : onYT ? '<span class="badge b-warn">nicht gelistet</span>'
+             : '<span class="badge b-mut">nicht hochgeladen</span>';
+    const cap=v.captions==='karaoke'
+      ? '<span class="badge b-info">Karaoke</span>' : '<span class="badge b-mut">Block</span>';
+    const shown=v.youtube_title||v.title||'(ohne Titel)';
+    const orig=(v.youtube_title&&v.title)?`<div class="vid-sub">Thema: ${v.title}</div>`:'';
+    const btnPub='';
+    const lnkYT=onYT
+      ? `<a class="link" href="https://youtu.be/${v.youtube_id}" target="_blank">→ YouTube</a>`:'';
+    const lnkPv=v.preview_file
+      ? `<a class="link" href="${v.preview_file}" target="_blank">→ Preview</a>`:'';
     return `<div class="vid">
-      <div class="vid-title">${v.title||'(ohne Titel)'}</div>
-      <div>${up} ${cap}</div>
+      <div class="vid-title">${shown}</div>
+      ${orig}
+      <div>${state}${cap}</div>
       <div class="meta">
         <span class="chip">Gebaut <b>${fmtDate(v.created_at)}</b></span>
         <span class="chip">Länge <b>${v.duration_sec||'?'}s</b></span>
         <span class="chip">Clips <b>${v.clips??0}</b></span>
-        ${v.source?`<span class="chip">Quelle <b>${v.source}</b></span>`:''}
         ${(v.keywords&&v.keywords.length)
           ?`<span class="chip">Footage <b>${v.keywords.join(', ')}</b></span>`:''}
       </div>
       ${v.script_preview?`<div class="prev">„${v.script_preview}…"</div>`:''}
-      <div style="margin-top:8px">${pv} ${yt}</div>
+      <div class="row">
+        ${btnPub}${lnkPv}${lnkYT}
+
+      </div>
     </div>`;
   }).join('');
 }
@@ -162,16 +170,15 @@ fetch('data/videos.json?ts='+Date.now())
   .then(r=>{ if(!r.ok) throw new Error('no data'); return r.json(); })
   .then(v=>{
     render(Array.isArray(v)?v:[]);
-    document.getElementById('note').innerHTML =
-      '⏳ <b>Upload steht noch aus.</b> Sobald die YouTube-OAuth abgeschlossen ist, ' +
-      'werden die Videos automatisch hochgeladen und hier mit Link angezeigt.';
+    document.getElementById('note').innerHTML=
+      'ℹ️ Videos werden <b>nicht gelistet</b> hochgeladen. Freigeben oder löschen per <b>Telegram-Button</b>.';
   })
   .catch(()=>{
     render([]);
-    document.getElementById('note').innerHTML =
-      '⚠️ <b>Noch keine <code>data/videos.json</code> im Repo.</b> ' +
-      'Sie entsteht beim nächsten Workflow-Lauf automatisch.';
+    document.getElementById('note').innerHTML=
+      '⚠️ Noch keine <code>data/videos.json</code> — entsteht beim nächsten Lauf.';
   });
+
 </script>
 </body>
 </html>
