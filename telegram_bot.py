@@ -78,6 +78,42 @@ def handle_reject(youtube_id: str) -> str:
         return f"❌ Konnte nicht löschen: {e}"
 
 
+def do_cleanup() -> str:
+    """Remove log entries that were never uploaded (no YouTube video)."""
+    videos = mv.load()
+    before = len(videos)
+    kept = [v for v in videos if v.get("youtube_id")]
+    mv.save(kept)
+    removed = before - len(kept)
+    return (f"🧹 {removed} Eintrag/Einträge entfernt (nie hochgeladen).\n"
+            f"Im Dashboard verbleiben: {len(kept)}")
+
+
+def do_prune() -> str:
+    """Remove entries whose YouTube video no longer exists (deleted by hand)."""
+    videos = mv.load()
+    with_id = [v for v in videos if v.get("youtube_id")]
+    if not with_id:
+        return "Nichts zu prüfen."
+    try:
+        yt = mv.youtube_service()
+        ids = [v["youtube_id"] for v in with_id]
+        alive = set()
+        for i in range(0, len(ids), 50):
+            resp = yt.videos().list(part="id", id=",".join(ids[i:i + 50])).execute()
+            alive.update(item["id"] for item in resp.get("items", []))
+    except Exception as e:
+        return f"❌ Konnte YouTube nicht abfragen: {e}"
+
+    kept = [v for v in videos
+            if not v.get("youtube_id") or v["youtube_id"] in alive]
+    removed = len(videos) - len(kept)
+    mv.save(kept)
+    return (f"🧹 {removed} Eintrag/Einträge entfernt "
+            f"(Video existiert nicht mehr auf YouTube).\n"
+            f"Im Dashboard verbleiben: {len(kept)}")
+
+
 def list_pending() -> str:
     pending = [v for v in mv.load()
                if v.get("youtube_id") and v.get("upload_status") != "public"]
@@ -135,12 +171,23 @@ def main():
         print(f"→ message: {text}")
         if text.startswith("/pending"):
             send(list_pending())
+        elif text.startswith("/cleanup"):
+            send(do_cleanup())
+        elif text.startswith("/prune"):
+            send(do_prune())
         elif text.startswith("/publish"):
             parts = text.split()
             if len(parts) >= 2:
                 send(handle_publish(parts[1]))
             else:
                 send("Nutzung: /publish <youtube_id>")
+        elif text.startswith("/help") or text.startswith("/start"):
+            send("Befehle:\n"
+                 "/pending — Videos, die auf Freigabe warten\n"
+                 "/cleanup — Dashboard: nie hochgeladene Einträge entfernen\n"
+                 "/prune — Dashboard: Einträge entfernen, deren Video auf "
+                 "YouTube nicht mehr existiert\n"
+                 "/publish <id> — Video öffentlich schalten")
 
     _save_offset(max_id)
     print(f"✅ {len(updates)} Update(s) verarbeitet")
