@@ -94,32 +94,6 @@ def get_youtube_service():
         return None
 
 # ============================================================================
-# GET CHANNEL ID
-# ============================================================================
-
-def get_channel_id(youtube):
-    """Get authenticated user's YouTube channel ID"""
-    try:
-        request = youtube.channels().list(
-            part="snippet",
-            mine=True
-        )
-        response = request.execute()
-        
-        if response['items']:
-            channel_id = response['items'][0]['id']
-            channel_name = response['items'][0]['snippet']['title']
-            print(f"✅ Channel found: {channel_name} ({channel_id})")
-            return channel_id
-        else:
-            print("❌ No channel found")
-            return None
-    
-    except Exception as e:
-        print(f"❌ Error getting channel ID: {e}")
-        return None
-
-# ============================================================================
 # UPLOAD VIDEO
 # ============================================================================
 
@@ -195,7 +169,7 @@ def upload_video(youtube, video_path: str, title: str, description: str, tags: l
             "🎬"
         )
         
-        return True
+        return video_id
     
     except Exception as e:
         print(f"❌ Upload failed: {e}")
@@ -205,6 +179,27 @@ def upload_video(youtube, video_path: str, title: str, description: str, tags: l
 # ============================================================================
 # MAIN - UPLOAD ALL VIDEOS FROM OUTPUT
 # ============================================================================
+
+def _mark_uploaded(slot: int, youtube_id: str):
+    """Write the YouTube id + status back into data/videos.json (for the dashboard)."""
+    try:
+        data_file = os.path.join(SCRIPT_DIR, "data", "videos.json")
+        if not os.path.exists(data_file):
+            return
+        with open(data_file) as f:
+            videos = json.load(f)
+        # update the most recent entry for this slot that is still pending
+        for entry in reversed(videos):
+            if entry.get("slot") == slot and entry.get("upload_status") != "uploaded":
+                entry["youtube_id"] = youtube_id
+                entry["upload_status"] = "uploaded"
+                break
+        with open(data_file, "w") as f:
+            json.dump(videos, f, indent=2)
+        print(f"✅ Dashboard updated (slot {slot} → {youtube_id})")
+    except Exception as e:
+        print(f"⚠️ Could not update dashboard log: {e}")
+
 
 def upload_all_videos():
     """Upload all generated videos from output directory"""
@@ -226,12 +221,9 @@ def upload_all_videos():
     if not youtube:
         print("❌ Could not authenticate with YouTube")
         return
-    
-    # Get channel ID
-    channel_id = get_channel_id(youtube)
-    if not channel_id:
-        print("❌ Could not get channel ID")
-        return
+
+    # NOTE: no channels().list() call here — it needs the youtube.readonly scope.
+    # Uploads go to the channel that authorized the token, so it is not needed.
     
     # Load video metadata
     metadata_file = os.path.join(output_dir, "videos_log.json")
@@ -260,11 +252,13 @@ def upload_all_videos():
             tags = ["viral", "trending", "AI", "shorts", "facts", "NeuronOv3rload"]
             
             video_path = os.path.join(output_dir, video_file)
-            
+
             # Upload
-            if upload_video(youtube, video_path, title, description, tags):
+            yt_id = upload_video(youtube, video_path, title, description, tags)
+            if yt_id:
                 uploaded_count += 1
-        
+                _mark_uploaded(video_id, yt_id)
+
         except Exception as e:
             print(f"⚠️ Error processing {video_file}: {e}")
             continue
