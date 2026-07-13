@@ -114,7 +114,7 @@ def _title_frame(title: str) -> Image.Image:
 
     # subtle brand tag: small, letter-spaced, muted, centered at very top
     tag_font = ImageFont.truetype(FONT_BOLD, 26)
-    tag = " ".join("neuron0v3rload".upper())  # letter-spaced
+    tag = " ".join("neuronoverload".upper())  # letter-spaced
     draw.text((W // 2, 84), tag, font=tag_font, fill=(120, 132, 168), anchor="ma")
 
     # title, centered
@@ -269,9 +269,19 @@ def _clean_title(title: str) -> str:
 
 
 def normalize_for_speech(text: str) -> str:
-    """Fixes so TTS reads correctly (e.g. thousands separators)."""
+    """Fixes so TTS reads correctly AND punchy (no dramatic pauses)."""
     text = re.sub(r"(?<=\d),(?=\d)", "", text)   # 1,200 -> 1200
     text = text.replace("%", " percent")
+
+    # kill pause-inducing punctuation — these make ElevenLabs slow down hard
+    text = text.replace("…", " ")
+    text = re.sub(r"\.{2,}", " ", text)          # "..." -> space
+    text = re.sub(r"\s*[—–]\s*", " ", text)      # em/en dash -> space
+    text = re.sub(r"\s+-\s+", " ", text)         # spaced hyphen -> space
+    text = re.sub(r"[:;]", ",", text)            # softer than a full stop
+    text = re.sub(r"\s*,\s*,+", ", ", text)      # collapse doubled commas
+    text = re.sub(r"\s+([.,!?])", r"\1", text)   # no space before punctuation
+
     text = re.sub(r"\s+", " ", text).strip()
     return text
 
@@ -346,7 +356,7 @@ def _title_overlay_png(title: str, path: str):
     img.alpha_composite(scrim)
 
     tag_font = ImageFont.truetype(FONT_BOLD, 26)
-    draw.text((W // 2, start_y - 70), " ".join("neuron0v3rload".upper()),
+    draw.text((W // 2, start_y - 70), " ".join("neuronoverload".upper()),
               font=tag_font, fill=(150, 200, 255), anchor="ma")
 
     y = start_y
