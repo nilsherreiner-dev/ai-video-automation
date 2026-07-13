@@ -118,5 +118,45 @@
     "preview_file": "preview/video_2.mp4",
     "youtube_id": "6iL0Xa2YKgk",
     "upload_status": "uploaded"
+  },
+  {
+    "run_id": "20260713-113242",
+    "slot": 1,
+    "created_at": "2026-07-13T11:32:42Z",
+    "title": "Lindsey Graham, longtime senator from South Carolina, dies at 71 - The Washington Post",
+    "source": "The Washington Post",
+    "keywords": [
+      "Capitol building",
+      "Senate chamber",
+      "South Carolina"
+    ],
+    "duration_sec": 89.2,
+    "captions": "karaoke",
+    "footage": "stock",
+    "clips": 3,
+    "script_preview": "[0:00-0:03] HOOK\nBreaking: One of the most controversial voices in American politics has died. Senator Lindsey Graham was 71.\n\n[0:03-1:00] CONTENT\nThe South Car",
+    "preview_file": "preview/video_1.mp4",
+    "youtube_id": "QNRlhXgRNl0",
+    "upload_status": "uploaded"
+  },
+  {
+    "run_id": "20260713-113521",
+    "slot": 2,
+    "created_at": "2026-07-13T11:35:21Z",
+    "title": "Survivors of Iranian attack that killed 6 U.S. troops say generals ignored warnings - The Washington Post",
+    "source": "The Washington Post",
+    "keywords": [
+      "Military convoy",
+      "Explosion aftermath",
+      "Troops patrolling"
+    ],
+    "duration_sec": 87.4,
+    "captions": "karaoke",
+    "footage": "stock",
+    "clips": 3,
+    "script_preview": "[0:00-0:03] HOOK\n\"Six American troops died because generals ignored THIS warning. And no one's been held accountable.\"\n\n[0:03-1:00] CONTENT\nDay two of the Iraq ",
+    "preview_file": "preview/video_2.mp4",
+    "youtube_id": "bgEdQq2h0_M",
+    "upload_status": "uploaded"
   }
 ]
