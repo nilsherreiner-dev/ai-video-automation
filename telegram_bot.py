@@ -220,10 +220,22 @@ def main():
 
     offset = _load_offset()
     try:
-        r = requests.get(f"{API}/getUpdates",
-                         params={"offset": offset + 1, "timeout": 0},
-                         timeout=20)
-        updates = r.json().get("result", [])
+        r = requests.get(
+            f"{API}/getUpdates",
+            params={
+                "offset": offset + 1,
+                "timeout": 0,
+                # MUST be explicit: Telegram remembers the last allowed_updates
+                # server-side. Without callback_query the inline buttons are
+                # silently dropped and nothing ever happens.
+                "allowed_updates": json.dumps(["message", "callback_query"]),
+            },
+            timeout=20)
+        payload = r.json()
+        if not payload.get("ok"):
+            print(f"❌ getUpdates: {payload}")
+            return
+        updates = payload.get("result", [])
     except Exception as e:
         print(f"❌ getUpdates failed: {e}")
         return
@@ -231,6 +243,9 @@ def main():
     if not updates:
         print("ℹ️ Keine neuen Updates")
         return
+
+    print(f"📥 {len(updates)} Update(s): "
+          f"{[('callback' if 'callback_query' in u else 'message') for u in updates]}")
 
     max_id = offset
     for upd in updates:
@@ -240,7 +255,10 @@ def main():
         cb = upd.get("callback_query")
         if cb:
             data = (cb.get("data") or "").strip()
+            cb_id = cb.get("id", "")
             print(f"→ callback: {data}")
+            # clear the spinner first; the real work can take a few seconds
+            answer_callback(cb_id, "Wird verarbeitet…")
             if data.startswith("approve:"):
                 msg = handle_approve(data.split(":", 1)[1])
             elif data.startswith("publish:"):
@@ -249,7 +267,6 @@ def main():
                 msg = handle_reject(data.split(":", 1)[1])
             else:
                 msg = f"Unbekannte Aktion: {data}"
-            answer_callback(cb.get("id", ""), msg[:190])
             send(msg)
             continue
 
@@ -284,11 +301,11 @@ def main():
         elif text.startswith("/now"):
             parts = text.split()
             send(handle_publish(parts[1]) if len(parts) >= 2
-                 else "Nutzung: /now <youtube_id>")
+                 else "Welches Video? Hier die offenen:\n\n" + list_pending())
         elif text.startswith("/publish"):
             parts = text.split()
             send(handle_approve(parts[1]) if len(parts) >= 2
-                 else "Nutzung: /publish <youtube_id>")
+                 else "Welches Video? Hier die offenen:\n\n" + list_pending())
         elif text.startswith("/help") or text.startswith("/start"):
             send("Befehle:\n"
                  "/pending — wartet auf Freigabe\n"
