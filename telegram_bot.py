@@ -258,7 +258,20 @@ def main():
         if not text:
             continue
         print(f"→ message: {text}")
-        if text.startswith("/pending"):
+        if text.startswith("/playbook"):
+            try:
+                import brain
+                send(brain.load_playbook()[:3900])
+            except Exception as e:
+                send(f"❌ {e}")
+        elif text.startswith("/reflect"):
+            try:
+                import brain
+                send("🧠 Analysiere alle Ergebnisse…")
+                brain.reflect()
+            except Exception as e:
+                send(f"❌ Reflexion fehlgeschlagen: {e}")
+        elif text.startswith("/pending"):
             send(list_pending())
         elif text.startswith("/queue"):
             send(list_queue())
@@ -279,12 +292,16 @@ def main():
         elif text.startswith("/help") or text.startswith("/start"):
             send("Befehle:\n"
                  "/pending — wartet auf Freigabe\n"
-                 "/queue — freigegeben, wartet auf geplanten Zeitpunkt\n"
+                 "/queue — freigegeben, wartet auf Zeitpunkt\n"
                  "/publish <id> — freigeben (KI wählt Zeitpunkt)\n"
                  "/now <id> — sofort veröffentlichen\n"
-                 "/sync — Dashboard mit YouTube abgleichen\n"
-                 "/cleanup — nie hochgeladene Einträge entfernen\n"
-                 "/prune — Einträge ohne YouTube-Video entfernen")
+                 "\n🧠 Gehirn:\n"
+                 "/playbook — aktuelle Strategie ansehen\n"
+                 "/reflect — jetzt aus den Zahlen lernen\n"
+                 "\n🧹 Pflege:\n"
+                 "/sync — mit YouTube abgleichen\n"
+                 "/cleanup — nie hochgeladene Einträge weg\n"
+                 "/prune — Einträge ohne Video weg")
 
     _save_offset(max_id)
     print(f"✅ {len(updates)} Update(s) verarbeitet")
