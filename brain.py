@@ -19,7 +19,7 @@ Guardrails (deliberate):
 import os
 import re
 import json
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 import requests
 
@@ -119,6 +119,113 @@ def load_videos():
 
 # ------------------------------------------------------ topic selection ----
 
+def predict_performance(video, videos_history):
+    """Predict views BEFORE publishing, so the brain can be scored later.
+
+    This is the only honest way to know whether it is actually learning:
+    a prediction that can be wrong, checked against reality.
+    """
+    try:
+        past = [
+            {"title": (v.get("youtube_title") or v.get("title") or "")[:60],
+             "kind": v.get("kind", "news"),
+             "views": v.get("views"),
+             "predicted": (v.get("prediction") or {}).get("views")}
+            for v in videos_history
+            if v.get("upload_status") == "public" and v.get("views") is not None
+        ][-25:]
+
+        prompt = f"""Predict how this Short will perform. Be honest, not optimistic.
+
+CHANNEL PLAYBOOK:
+{load_playbook()}
+
+VIDEO:
+title: {video.get('youtube_title') or video.get('title')}
+kind: {video.get('kind', 'news')}
+hook: {(video.get('script_preview') or '')[:150]}
+
+PAST VIDEOS — your earlier predictions vs. what actually happened:
+{json.dumps(past, indent=1) if past else "NONE — you have never been scored yet."}
+
+If your past predictions were consistently too high or too low, CORRECT for that
+now. That is the whole point of this exercise.
+
+Return ONLY JSON:
+{{"views": <integer, your best guess for views after 7 days>,
+  "reasoning": "<one sentence>",
+  "confidence": "low|medium|high",
+  "biggest_risk": "<what could make this flop, one short phrase>"}}"""
+
+        resp = _client().messages.create(
+            model=MODEL, max_tokens=300,
+            messages=[{"role": "user", "content": prompt}])
+        raw = re.sub(r"```(?:json)?|```", "", _text(resp)).strip()
+        m = re.search(r"\{.*\}", raw, re.S)
+        data = json.loads(m.group(0) if m else raw)
+
+        return {
+            "views": int(data.get("views", 0)),
+            "reasoning": str(data.get("reasoning", ""))[:200],
+            "confidence": str(data.get("confidence", "low")),
+            "biggest_risk": str(data.get("biggest_risk", ""))[:120],
+            "made_at": datetime.now(timezone.utc).isoformat(timespec="minutes"),
+        }
+    except Exception as e:
+        print(f"⚠️ Prognose fehlgeschlagen: {e}")
+        return None
+
+
+def calibration_report(videos):
+    """How wrong were the predictions? Feeds back into the next reflection."""
+    scored = []
+    for v in videos:
+        pred = (v.get("prediction") or {}).get("views")
+        actual = v.get("views")
+        if pred is None or actual is None or v.get("upload_status") != "public":
+            continue
+        pub = v.get("published_at")
+        if pub:
+            try:
+                age = (datetime.now(timezone.utc)
+                       - datetime.fromisoformat(pub.replace("Z", "+00:00")))
+                if age.total_seconds() < 48 * 3600:
+                    continue     # too early to judge
+            except Exception:
+                pass
+        scored.append({
+            "title": (v.get("youtube_title") or v.get("title") or "")[:50],
+            "predicted": pred,
+            "actual": actual,
+            "ratio": round(actual / pred, 2) if pred > 0 else None,
+        })
+    if not scored:
+        return None
+    ratios = [s["ratio"] for s in scored if s["ratio"]]
+    avg = round(sum(ratios) / len(ratios), 2) if ratios else None
+    return {"n": len(scored), "avg_actual_over_predicted": avg, "detail": scored[-10:]}
+
+
+def already_covered(title, videos, days=21):
+    """Avoid re-doing a topic we recently covered."""
+    cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+    words = {w.lower() for w in re.findall(r"\w{5,}", title)}
+    if not words:
+        return False
+    for v in videos:
+        try:
+            when = datetime.fromisoformat(
+                (v.get("created_at") or "").replace("Z", "+00:00"))
+            if when < cutoff:
+                continue
+        except Exception:
+            continue
+        prev = {w.lower() for w in re.findall(r"\w{5,}", v.get("title") or "")}
+        if prev and len(words & prev) / len(words) > 0.55:
+            return True
+    return False
+
+
 def propose_evergreen(n=4):
     """Let Claude invent evergreen candidates (science / tech / weird facts).
 
@@ -176,6 +283,16 @@ def select_topics(headlines, want=2):
     or one of each — whatever it thinks works best today.
     """
     candidates = list(headlines) + propose_evergreen(4)
+
+    # never repeat a topic we covered in the last three weeks
+    history = load_videos()
+    fresh = [c for c in candidates if not already_covered(c["title"], history)]
+    if len(fresh) >= want:
+        dropped = len(candidates) - len(fresh)
+        if dropped:
+            print(f"🧠 {dropped} Thema/Themen übersprungen (kürzlich behandelt)")
+        candidates = fresh
+
     if len(candidates) <= want:
         return candidates
     try:
@@ -193,18 +310,24 @@ CHANNEL PLAYBOOK (what we have learned so far):
 CANDIDATES (news headlines and evergreen ideas):
 {listing}
 
-How to judge:
+HARD RULES — a violation can get the channel struck, so these override everything:
+- NEVER pick a story whose subject is people dying, being killed or injured
+  (fires, crashes, shootings, attacks, disasters). Not as a "viral short".
+  A tragedy is not content. Skip it, even if it would perform well.
+- No medical or financial advice framed as fact.
+- No content that mocks or dehumanises any group.
+
+How to judge the rest:
 - Would a random person stop scrolling for this? That is the only real test.
 - Global relevance beats local. US-only politics rarely travels.
 - Surprise beats importance. A weird fact can outperform major news.
-- Visual potential: is there footage that fits?
+- Visual potential: is there stock footage that fits?
 - Evergreen ideas keep working for months; news dies in a day. Weigh that.
-- Follow what the playbook says works, avoid what it says to avoid.
 - Do NOT default to news just because it is there. If today's headlines are
-  weak or too local, pick evergreen ideas instead.
+  weak, too local, or violate the hard rules, pick evergreen ideas instead.
 
 Return ONLY JSON:
-{{"picks": [<index>, <index>], "why": "<one sentence per pick>"}}"""
+{{"picks": [<index>, ...], "why": "<one sentence per pick>"}}"""
 
         resp = _client().messages.create(
             model=MODEL, max_tokens=400,
@@ -257,6 +380,10 @@ def reflect():
         alert(msg)
         return
 
+    calib = calibration_report(videos)
+    calib_txt = (json.dumps(calib, indent=1) if calib
+                 else "NO SCORED PREDICTIONS YET")
+
     prompt = f"""You are the strategist for a faceless YouTube Shorts channel.
 Rewrite the channel playbook based on REAL results.
 
@@ -266,23 +393,31 @@ CURRENT PLAYBOOK:
 REAL PERFORMANCE DATA (n={n} published videos):
 {json.dumps(perf, indent=1)}
 
+YOUR OWN PREDICTION ACCURACY (this is your report card):
+{calib_txt}
+If avg_actual_over_predicted is far below 1.0 you have been over-optimistic.
+Far above 1.0 means you underestimate. Say so plainly and correct for it.
+
 HARD RULES — violating these makes the playbook worse, not better:
 - State the sample size for every claim, e.g. "(n=3, unproven)".
 - With fewer than 5 examples supporting a pattern, you MUST label it
   "unproven hypothesis", never a rule.
 - View counts on Shorts are dominated by algorithmic luck. Do NOT invent
   causal stories for single outliers. One video with many views proves nothing.
+- Compare like with like: retention (avg_view_pct) is a far better signal of
+  script quality than views, because it is less algorithm-dependent. If you
+  have retention data, weight it heavily.
 - If the data shows nothing conclusive, SAY SO and keep the playbook mostly
   unchanged. A playbook that admits ignorance is more useful than a confident
   wrong one.
 - Keep it under {PLAYBOOK_MAX_CHARS} characters. Delete lessons that were
-  disproven or are no longer relevant.
+  disproven.
 - You may evolve the content direction (topics, hooks, style) if the data
-  or reasoning supports it.
+  supports it. Also note which topic KIND (news vs evergreen) performs better.
 
-Return ONLY the new playbook in markdown. Keep these sections:
+Return ONLY the new playbook in markdown, with these sections:
 Status / What we believe works / What we avoid / Open questions to test /
-Lessons learned (with evidence)."""
+Prediction calibration / Lessons learned (with evidence)."""
 
     try:
         resp = _client().messages.create(
