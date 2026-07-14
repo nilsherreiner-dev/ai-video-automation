@@ -40,6 +40,13 @@ SEED_PLAYBOOK = """# NeuronOverload — Channel Playbook
 *Living strategy document. Updated by the weekly reflection.
 Everything here is fed into every script prompt.*
 
+## Channel identity — THE NICHE
+This channel is about **science, discovery, invention and technology**.
+Mind-blowing findings, breakthroughs, how things actually work, weird
+scientific facts, engineering feats, space, the human brain, the future.
+
+A viewer should learn something that makes them go "wait, WHAT?".
+
 ## Status
 - Videos published: 0
 - Confidence: NONE — no data yet. Everything below is a starting hypothesis,
@@ -48,20 +55,33 @@ Everything here is fed into every script prompt.*
 ## What we believe works (unproven starting assumptions)
 - The first 2 seconds decide everything. Open with the most surprising fact,
   never with context or setup.
-- Concrete numbers beat adjectives ("1200 people" > "many people").
+- Concrete numbers beat adjectives ("1200 times stronger" > "much stronger").
 - Short sentences. Fast pace. No dramatic pauses.
 - One idea per video. No lists, no "there are 5 reasons".
+- Science travels globally. That is the whole point of this niche.
 
 ## What we avoid
-- Topics with no global relevance (local US politics rarely travels).
-- Tragedy framed as entertainment. Stay factual and respectful — it is also
-  a channel-strike risk.
+- **Politics, elections, politicians.** Not our channel.
+- **Local news** with no global relevance (a US senator means nothing abroad).
+- **Sports, celebrities, entertainment gossip.**
+- Tragedy as clickbait. We can cover a disaster if there is a real scientific
+  angle (why the bridge failed, how the fire spread so fast) — but the video
+  must explain and inform, never sensationalise the suffering.
+- Made-up or unverifiable "facts". Everything must be true.
 - Headlines copied verbatim as titles.
 
+## Topic sources, in order of preference
+1. Evergreen science/tech/invention ideas (they keep working for months)
+2. Science and technology news (breakthroughs, discoveries, launches)
+3. Other news ONLY if there is a genuine scientific or technological angle
+
 ## Open questions to test
-- Do curiosity-gap hooks ("Nobody noticed this...") beat fact hooks?
-- Do science/tech topics outperform news topics?
+- Do "how it works" explainers beat "surprising fact" videos?
+- Space vs. biology vs. technology — which pulls hardest?
 - Does the publish hour matter at all, or is it noise?
+
+## Prediction calibration
+*(no scored predictions yet)*
 
 ## Lessons learned (with evidence)
 *(empty — nothing proven yet)*
@@ -226,34 +246,42 @@ def already_covered(title, videos, days=21):
     return False
 
 
-def propose_evergreen(n=4):
-    """Let Claude invent evergreen candidates (science / tech / weird facts).
+def propose_evergreen(n=6):
+    """Generate evergreen science/invention ideas — the backbone of the channel.
 
-    These compete with the news headlines — so the brain can decide that today
-    a mind-blowing science fact beats yet another politics story.
+    These are the primary source now: news is only used when it has a real
+    scientific angle. Evergreen ideas also keep working for months.
     """
     try:
-        prompt = f"""Propose {n} video ideas for a viral YouTube Shorts channel.
+        recent = [v.get("title", "") for v in load_videos()][-25:]
+        prompt = f"""Propose {n} video ideas for a SCIENCE & INVENTION YouTube Shorts channel.
 
-CHANNEL PLAYBOOK (what works here so far):
+CHANNEL PLAYBOOK (the niche and what works here):
 {load_playbook()}
 
+ALREADY COVERED — do not repeat these or anything close to them:
+{json.dumps(recent, indent=1) if recent else "nothing yet"}
+
 Rules:
-- These are EVERGREEN ideas, not news: mind-blowing science, technology,
-  space, psychology, history, "weird facts nobody knows".
-- Each must have a genuinely surprising core fact — something that makes
-  someone stop scrolling. No generic "top 5" listicles.
-- Must be TRUE and verifiable. No made-up statistics.
-- Must be visual (there has to be stock footage that fits).
+- Domains: physics, biology, space, neuroscience, engineering, materials,
+  medicine, computing, inventions, weird-but-true scientific facts, how things
+  actually work, historical breakthroughs.
+- Each needs ONE genuinely surprising core fact — the kind that makes someone
+  stop scrolling and say "wait, WHAT?".
+- Must be TRUE and verifiable. No invented statistics, no pop-science myths
+  (no "we only use 10% of our brain" nonsense).
+- Must be visual: there has to be stock footage that plausibly fits.
+- Prefer the counterintuitive over the merely impressive.
+- No listicles. One idea per video.
 
 Return ONLY JSON:
 {{"ideas": [
   {{"title": "<punchy title, max 70 chars>",
     "description": "<the surprising core fact, 1-2 sentences>",
-    "category": "science|tech|space|psychology|history|weird"}}
+    "category": "physics|biology|space|neuro|engineering|medicine|computing|invention|history"}}
 ]}}"""
         resp = _client().messages.create(
-            model=MODEL, max_tokens=900,
+            model=MODEL, max_tokens=1400,
             messages=[{"role": "user", "content": prompt}])
         raw = re.sub(r"```(?:json)?|```", "", _text(resp)).strip()
         m = re.search(r"\{.*\}", raw, re.S)
@@ -266,10 +294,10 @@ Return ONLY JSON:
             out.append({
                 "title": idea["title"],
                 "description": idea.get("description", ""),
-                "source": f"evergreen/{idea.get('category', 'general')}",
+                "source": f"evergreen/{idea.get('category', 'science')}",
                 "kind": "evergreen",
             })
-        print(f"🧠 {len(out)} Evergreen-Ideen vorgeschlagen")
+        print(f"🧠 {len(out)} Wissenschafts-Ideen vorgeschlagen")
         return out
     except Exception as e:
         print(f"⚠️ Evergreen-Ideen fehlgeschlagen: {e}")
@@ -282,7 +310,7 @@ def select_topics(headlines, want=2):
     The brain decides the mix: it may pick two news items, two evergreen ideas,
     or one of each — whatever it thinks works best today.
     """
-    candidates = list(headlines) + propose_evergreen(4)
+    candidates = list(headlines) + propose_evergreen(6)
 
     # never repeat a topic we covered in the last three weeks
     history = load_videos()
@@ -302,29 +330,35 @@ def select_topics(headlines, want=2):
             for i, c in enumerate(candidates)
         )
         prompt = f"""Pick the {want} ideas with the best chance of going viral
-as YouTube Shorts TODAY. You are free to choose any mix.
+as YouTube Shorts TODAY for THIS channel.
 
-CHANNEL PLAYBOOK (what we have learned so far):
+CHANNEL PLAYBOOK — the niche and everything learned so far:
 {load_playbook()}
 
 CANDIDATES (news headlines and evergreen ideas):
 {listing}
 
-HARD RULES — a violation can get the channel struck, so these override everything:
-- NEVER pick a story whose subject is people dying, being killed or injured
-  (fires, crashes, shootings, attacks, disasters). Not as a "viral short".
-  A tragedy is not content. Skip it, even if it would perform well.
-- No medical or financial advice framed as fact.
-- No content that mocks or dehumanises any group.
+THE NICHE IS THE FILTER — apply it first:
+- This is a SCIENCE / DISCOVERY / INVENTION / TECHNOLOGY channel.
+- Reject politics, elections, sports, celebrities, local crime — no matter how
+  big the headline. They are off-brand and they do not travel internationally.
+- A news story qualifies ONLY if it has a real scientific or technological
+  core (a breakthrough, a discovery, how something works, why something failed).
+- If today's headlines are all off-niche, pick evergreen science ideas instead.
+  An off-brand video is worse than a "boring" on-brand one — it confuses the
+  algorithm about who to show this channel to.
 
-How to judge the rest:
-- Would a random person stop scrolling for this? That is the only real test.
-- Global relevance beats local. US-only politics rarely travels.
-- Surprise beats importance. A weird fact can outperform major news.
+RESPONSIBILITY:
+- A disaster or accident can be covered ONLY from the "how/why did this happen"
+  angle, and must inform rather than exploit the suffering. If you cannot do
+  that respectfully, skip it.
+- Everything must be factually true. No invented statistics.
+
+Then judge the survivors by:
+- Would a random person stop scrolling? Surprise is the only real test.
+- Does it make the viewer feel smarter afterwards?
 - Visual potential: is there stock footage that fits?
 - Evergreen ideas keep working for months; news dies in a day. Weigh that.
-- Do NOT default to news just because it is there. If today's headlines are
-  weak, too local, or violate the hard rules, pick evergreen ideas instead.
 
 Return ONLY JSON:
 {{"picks": [<index>, ...], "why": "<one sentence per pick>"}}"""
