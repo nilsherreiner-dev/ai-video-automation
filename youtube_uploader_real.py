@@ -178,9 +178,11 @@ def send_review_request(title: str, youtube_id: str):
     url = f"https://youtu.be/{youtube_id}"
     text = (f"🎬 Neues Video (nicht gelistet)\n\n"
             f"📌 {title}\n{url}\n\n"
-            f"Ansehen und entscheiden:")
+            f"✅ Freigeben = KI wählt den besten Zeitpunkt\n"
+            f"🚀 Sofort = jetzt gleich veröffentlichen")
     buttons = [[
-        {"text": "🚀 Veröffentlichen", "callback_data": f"publish:{youtube_id}"},
+        {"text": "✅ Freigeben", "callback_data": f"approve:{youtube_id}"},
+        {"text": "🚀 Sofort", "callback_data": f"publish:{youtube_id}"},
         {"text": "🗑️ Löschen", "callback_data": f"reject:{youtube_id}"},
     ]]
     try:
