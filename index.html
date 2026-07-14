@@ -87,7 +87,7 @@
   <div class="note" id="note"></div>
 
   <footer>
-    Uploads sind <b>nicht gelistet</b>. Freigabe erfolgt über die Telegram-Buttons.<br>
+    Uploads sind <b>nicht gelistet</b>. Freigabe per Telegram → KI plant den Zeitpunkt.<br>
     Views/Abos erscheinen, sobald YouTube dafür Daten liefert.
   </footer>
 </main>
@@ -116,13 +116,16 @@ function render(videos){
   const wait=onYt-pub;
   const last=total?videos[videos.length-1]:null;
   const avg=total?(videos.reduce((s,v)=>s+(v.duration_sec||0),0)/total).toFixed(0)+'s':'—';
+  const totalViews=videos.reduce((s,v)=>s+(v.views||0),0);
+  const queued=videos.filter(v=>v.approved&&v.upload_status!=='public').length;
 
   document.getElementById('stats').innerHTML=[
     statCard('Videos gebaut',total,total?`zuletzt ${fmtDate(last.created_at)}`:'',false),
     statCard('Ø Länge',avg,'',false),
     statCard('Auf YouTube',onYt,wait?`${wait} wartet auf Freigabe`:'',false),
     statCard('Öffentlich',pub,wait?`${wait} warten auf Freigabe`:'',!pub),
-    statCard('Views','Keine Daten','verfügbar nach Veröffentlichung',true),
+    statCard('Views gesamt', totalViews>0?totalViews:'—',
+             pub?`über ${pub} öffentliche Videos`:'noch nichts öffentlich', totalViews===0),
   ].join('');
 
   const box=document.getElementById('videos');
@@ -137,8 +140,8 @@ function render(videos){
     let state;
     if(!onYT)            state='<span class="badge b-mut">nicht hochgeladen</span>';
     else if(isPub)       state='<span class="badge b-ok">öffentlich</span>';
-    else if(st==='private') state='<span class="badge b-warn">privat</span>';
-    else                 state='<span class="badge b-warn">nicht gelistet</span>';
+    else if(v.approved)  state='<span class="badge b-info">freigegeben — geplant</span>';
+    else                 state='<span class="badge b-warn">wartet auf Review</span>';
     const cap=v.captions==='karaoke'
       ? '<span class="badge b-info">Karaoke</span>' : '<span class="badge b-mut">Block</span>';
     const shown=v.youtube_title||v.title||'(ohne Titel)';
@@ -158,7 +161,18 @@ function render(videos){
         <span class="chip">Clips <b>${v.clips??0}</b></span>
         ${(v.keywords&&v.keywords.length)
           ?`<span class="chip">Footage <b>${v.keywords.join(', ')}</b></span>`:''}
+        ${v.scheduled_for&&!isPub
+          ?`<span class="chip">⏰ geplant <b>${v.scheduled_for} UTC</b></span>`:''}
+        ${v.published_at
+          ?`<span class="chip">📢 live seit <b>${fmtDate(v.published_at)}</b></span>`:''}
+        ${(v.views!==undefined&&v.views!==null)
+          ?`<span class="chip">👁 <b>${v.views}</b> Views</span>`:''}
+        ${(v.likes!==undefined&&v.likes!==null&&v.likes>0)
+          ?`<span class="chip">👍 <b>${v.likes}</b></span>`:''}
       </div>
+      ${v.schedule_reason
+        ? `<div class="prev">🤖 ${v.schedule_reason} <span style="opacity:.6">(Konfidenz: ${v.schedule_confidence||'?'})</span></div>`
+        : ''}
       ${v.script_preview?`<div class="prev">„${v.script_preview}…"</div>`:''}
       <div class="row">
         ${btnPub}${lnkPv}${lnkYT}
