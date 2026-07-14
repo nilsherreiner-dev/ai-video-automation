@@ -78,5 +78,47 @@
     "preview_file": "preview/video_2.mp4",
     "youtube_id": "DBeLoFxDH7c",
     "upload_status": "public"
+  },
+  {
+    "run_id": "20260714-093546",
+    "slot": 1,
+    "created_at": "2026-07-14T09:35:46Z",
+    "title": "Europe's Anduril rival Helsing raises $1.8 billion at $18 billion valuation - CNBC",
+    "youtube_title": "Why Europe's $18B AI Defense Startup Has Investors Fighting to Get In",
+    "source": "CNBC",
+    "keywords": [
+      "Military drones",
+      "Defense technology",
+      "European flags"
+    ],
+    "duration_sec": 50.0,
+    "captions": "karaoke",
+    "footage": "stock",
+    "clips": 3,
+    "script_preview": "Europe just birthed an AI defense giant overnight. German startup Helsing raised 1.8 billion dollars. Their new valuation? 18 billion dollars. That's ten times ",
+    "preview_file": "preview/video_1.mp4",
+    "youtube_id": "Cpx_1P8OQPc",
+    "upload_status": "uploaded"
+  },
+  {
+    "run_id": "20260714-093722",
+    "slot": 2,
+    "created_at": "2026-07-14T09:37:22Z",
+    "title": "Fire breaks out at a pub in Bangkok, killing at least 27 people - AP News",
+    "youtube_title": "How a Packed Bangkok Pub Fire Turned Deadly in Seconds",
+    "source": "Associated Press",
+    "keywords": [
+      "Bangkok nightlife",
+      "fire damage",
+      "emergency responders"
+    ],
+    "duration_sec": 47.3,
+    "captions": "karaoke",
+    "footage": "stock",
+    "clips": 3,
+    "script_preview": "A deadly fire tore through a Bangkok beer hall overnight. At least 27 people are dead. Dozens more injured. The blaze broke out around midnight Sunday. Firefigh",
+    "preview_file": "preview/video_2.mp4",
+    "youtube_id": "Ad3BZ1v3jQo",
+    "upload_status": "uploaded"
   }
 ]
