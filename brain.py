@@ -119,48 +119,110 @@ def load_videos():
 
 # ------------------------------------------------------ topic selection ----
 
-def select_topics(headlines, want=2):
-    """Pick the headlines with the best viral potential, guided by the playbook.
+def propose_evergreen(n=4):
+    """Let Claude invent evergreen candidates (science / tech / weird facts).
 
-    headlines: list of dicts with title/description/source
-    returns:   the chosen subset (falls back to the first `want` on failure)
+    These compete with the news headlines — so the brain can decide that today
+    a mind-blowing science fact beats yet another politics story.
     """
-    if len(headlines) <= want:
-        return headlines
     try:
-        listing = "\n".join(
-            f"{i}. {h['title']} [{h.get('source','')}]"
-            for i, h in enumerate(headlines)
-        )
-        prompt = f"""Pick the {want} headlines with the best chance of going viral
-as a YouTube Short for THIS channel.
+        prompt = f"""Propose {n} video ideas for a viral YouTube Shorts channel.
 
-CHANNEL PLAYBOOK (what we have learned so far):
+CHANNEL PLAYBOOK (what works here so far):
 {load_playbook()}
 
-CANDIDATE HEADLINES:
-{listing}
+Rules:
+- These are EVERGREEN ideas, not news: mind-blowing science, technology,
+  space, psychology, history, "weird facts nobody knows".
+- Each must have a genuinely surprising core fact — something that makes
+  someone stop scrolling. No generic "top 5" listicles.
+- Must be TRUE and verifiable. No made-up statistics.
+- Must be visual (there has to be stock footage that fits).
 
-Judge by: surprise value, global (not local) relevance, visual potential,
-and whether it fits what the playbook says works. Avoid what it says to avoid.
-
-Return ONLY JSON: {{"picks": [<index>, <index>], "why": "<one sentence>"}}"""
-
+Return ONLY JSON:
+{{"ideas": [
+  {{"title": "<punchy title, max 70 chars>",
+    "description": "<the surprising core fact, 1-2 sentences>",
+    "category": "science|tech|space|psychology|history|weird"}}
+]}}"""
         resp = _client().messages.create(
-            model=MODEL, max_tokens=300,
+            model=MODEL, max_tokens=900,
             messages=[{"role": "user", "content": prompt}])
         raw = re.sub(r"```(?:json)?|```", "", _text(resp)).strip()
         m = re.search(r"\{.*\}", raw, re.S)
         data = json.loads(m.group(0) if m else raw)
 
-        picks = [headlines[i] for i in data.get("picks", [])
-                 if isinstance(i, int) and 0 <= i < len(headlines)]
+        out = []
+        for idea in data.get("ideas", [])[:n]:
+            if not idea.get("title"):
+                continue
+            out.append({
+                "title": idea["title"],
+                "description": idea.get("description", ""),
+                "source": f"evergreen/{idea.get('category', 'general')}",
+                "kind": "evergreen",
+            })
+        print(f"🧠 {len(out)} Evergreen-Ideen vorgeschlagen")
+        return out
+    except Exception as e:
+        print(f"⚠️ Evergreen-Ideen fehlgeschlagen: {e}")
+        return []
+
+
+def select_topics(headlines, want=2):
+    """Pick today's topics from news AND evergreen ideas, guided by the playbook.
+
+    The brain decides the mix: it may pick two news items, two evergreen ideas,
+    or one of each — whatever it thinks works best today.
+    """
+    candidates = list(headlines) + propose_evergreen(4)
+    if len(candidates) <= want:
+        return candidates
+    try:
+        listing = "\n".join(
+            f"{i}. [{c.get('kind', 'news')}] {c['title']} "
+            f"({c.get('source', '')})\n   {c.get('description', '')[:120]}"
+            for i, c in enumerate(candidates)
+        )
+        prompt = f"""Pick the {want} ideas with the best chance of going viral
+as YouTube Shorts TODAY. You are free to choose any mix.
+
+CHANNEL PLAYBOOK (what we have learned so far):
+{load_playbook()}
+
+CANDIDATES (news headlines and evergreen ideas):
+{listing}
+
+How to judge:
+- Would a random person stop scrolling for this? That is the only real test.
+- Global relevance beats local. US-only politics rarely travels.
+- Surprise beats importance. A weird fact can outperform major news.
+- Visual potential: is there footage that fits?
+- Evergreen ideas keep working for months; news dies in a day. Weigh that.
+- Follow what the playbook says works, avoid what it says to avoid.
+- Do NOT default to news just because it is there. If today's headlines are
+  weak or too local, pick evergreen ideas instead.
+
+Return ONLY JSON:
+{{"picks": [<index>, <index>], "why": "<one sentence per pick>"}}"""
+
+        resp = _client().messages.create(
+            model=MODEL, max_tokens=400,
+            messages=[{"role": "user", "content": prompt}])
+        raw = re.sub(r"```(?:json)?|```", "", _text(resp)).strip()
+        m = re.search(r"\{.*\}", raw, re.S)
+        data = json.loads(m.group(0) if m else raw)
+
+        picks = [candidates[i] for i in data.get("picks", [])
+                 if isinstance(i, int) and 0 <= i < len(candidates)]
         if picks:
-            print(f"🧠 Themenwahl: {data.get('why','')}")
+            print(f"🧠 Themenwahl: {data.get('why', '')}")
+            for p in picks:
+                print(f"   → [{p.get('kind', 'news')}] {p['title']}")
             return picks[:want]
     except Exception as e:
         print(f"⚠️ Themenwahl fehlgeschlagen ({e}) — nehme die ersten {want}")
-    return headlines[:want]
+    return candidates[:want]
 
 
 # ---------------------------------------------------------- reflection ----
