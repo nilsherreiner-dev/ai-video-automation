@@ -223,6 +223,11 @@
     "script_preview": "A hammock made from graphene could hold a cat but weigh less than one cat whisker. Graphene is a single layer of carbon atoms arranged in hexagons\u2014one atom thic",
     "preview_file": "preview/video_2.mp4",
     "youtube_id": "QLQipGiu01A",
-    "upload_status": "uploaded"
+    "upload_status": "uploaded",
+    "approved": true,
+    "scheduled_for": "2026-07-15T08:54+00:00",
+    "schedule_reason": "No historical data available; scheduling for 8-9 AM US Eastern (high engagement morning hour) as an educated guess for evergreen science content.",
+    "schedule_confidence": "low",
+    "predicted_at": "2026-07-14T18:54+00:00"
   }
 ]
