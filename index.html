@@ -173,6 +173,15 @@ function render(videos){
       ${v.schedule_reason
         ? `<div class="prev">🤖 ${v.schedule_reason} <span style="opacity:.6">(Konfidenz: ${v.schedule_confidence||'?'})</span></div>`
         : ''}
+      ${v.prediction
+        ? `<div class="prev">🔮 Prognose: <b>${v.prediction.views}</b> Views
+             ${(v.views!==undefined&&v.views!==null)
+               ? `→ tatsächlich <b>${v.views}</b>
+                  <span style="opacity:.6">(${v.prediction.views>0
+                    ? (v.views/v.prediction.views).toFixed(2)+'x' : '—'})</span>`
+               : ''}
+             <span style="opacity:.6">· Risiko: ${v.prediction.biggest_risk||'—'}</span></div>`
+        : ''}
       ${v.script_preview?`<div class="prev">„${v.script_preview}…"</div>`:''}
       <div class="row">
         ${btnPub}${lnkPv}${lnkYT}
