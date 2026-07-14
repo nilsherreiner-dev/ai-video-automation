@@ -35,6 +35,13 @@ try:
 except ValueError:
     SPEECH_SPEED = 1.12
 
+# How many videos per run. Set the VIDEOS_PER_RUN secret, or pass it as a
+# workflow_dispatch input for a one-off bigger batch.
+try:
+    VIDEOS_PER_RUN = max(1, min(int(os.getenv("VIDEOS_PER_RUN") or "2"), 6))
+except ValueError:
+    VIDEOS_PER_RUN = 2
+
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 OUTPUT_DIR = os.path.join(SCRIPT_DIR, "output")
 os.makedirs(OUTPUT_DIR, exist_ok=True)
@@ -102,6 +109,62 @@ def fetch_trending_topics() -> List[Dict]:
 # ============================================================================
 # SCRIPT GENERATION (Claude AI)
 # ============================================================================
+
+def critique_and_improve(script: str, topic: Dict) -> str:
+    """Let Claude tear its own draft apart and rewrite it.
+
+    A first draft is almost always mediocre. Forcing an explicit critique step
+    catches weak hooks, buried facts and dead air before we spend money on TTS.
+    """
+    try:
+        from anthropic import Anthropic
+        client = Anthropic(api_key=ANTHROPIC_API_KEY)
+
+        prompt = f"""You wrote this YouTube Shorts script. Now be your own harshest critic.
+
+TOPIC: {topic.get('title')}
+
+DRAFT:
+{script}
+
+Step 1 — Attack the draft honestly. Be specific and brutal:
+- Would a scroller stop in the first 2 seconds? If not, WHY not?
+- Is the single most surprising fact in the first sentence, or buried?
+- Any sentence that adds nothing? Any setup before the payoff?
+- Is it concrete (numbers, specifics) or vague filler?
+- Does it stay respectful if the topic is tragic?
+
+Step 2 — Rewrite it, fixing every problem you found.
+
+Return ONLY this JSON:
+{{"critique": "<your honest criticism, 2-3 sentences>",
+  "improved_script": "<the rewritten script, spoken words only>"}}"""
+
+        resp = client.messages.create(
+            model="claude-sonnet-4-5", max_tokens=1200,
+            messages=[{"role": "user", "content": prompt}])
+
+        text = ""
+        for block in resp.content:
+            if getattr(block, "type", None) == "text":
+                text = block.text
+                break
+
+        raw = re.sub(r"```(?:json)?|```", "", text).strip()
+        m = re.search(r"\{.*\}", raw, re.S)
+        data = json.loads(m.group(0) if m else raw)
+
+        improved = (data.get("improved_script") or "").strip()
+        crit = (data.get("critique") or "").strip()
+
+        if len(improved) < 80:          # nonsense -> keep the original
+            return script
+        print(f"   🔍 Selbstkritik: {crit[:120]}")
+        return improved
+    except Exception as e:
+        print(f"   ⚠️ Selbstkritik übersprungen: {e}")
+        return script
+
 
 def generate_video_script(trend_topic: Dict) -> str:
     """Generate viral video script using Claude, guided by the channel playbook."""
@@ -458,6 +521,7 @@ def save_video_metadata(video_id: int, data: Dict):
             "title": data.get("title", ""),
             "youtube_title": data.get("youtube_title", ""),
             "kind": data.get("kind", "news"),
+            "prediction": data.get("prediction"),
             "source": data.get("source", ""),
             "keywords": data.get("keywords", []),
             "duration_sec": _video_duration(video_path) if video_path else 0.0,
@@ -507,10 +571,10 @@ def run_daily_automation():
     # Let the brain pick today's topics (news + its own evergreen ideas)
     try:
         from brain import select_topics
-        chosen = select_topics(trends, want=2)
+        chosen = select_topics(trends, want=VIDEOS_PER_RUN)
     except Exception as e:
         print(f"⚠️ Themenwahl übersprungen ({e})")
-        chosen = trends[:2]
+        chosen = trends[:VIDEOS_PER_RUN]
 
     if not chosen:
         send_telegram_alert("Keine Themen gefunden — Lauf abgebrochen", "❌")
@@ -523,10 +587,13 @@ def run_daily_automation():
         # Generate script
         print("   ✍️ Generating script...")
         script = generate_video_script(trend)
-        
+
         if not script:
             print(f"   ⚠️ Script generation failed, skipping")
             continue
+
+        # the brain reviews its own work before we commit money to TTS
+        script = critique_and_improve(script, trend)
         
         # Generate voiceover
         print("   🎤 Generating voiceover...")
@@ -578,7 +645,23 @@ def run_daily_automation():
         except Exception:
             clean_preview = script
 
+        # brain makes a falsifiable prediction — it gets scored later
+        prediction = None
+        try:
+            from brain import predict_performance, load_videos
+            prediction = predict_performance(
+                {"youtube_title": yt_title, "title": trend["title"],
+                 "kind": trend.get("kind", "news"),
+                 "script_preview": clean_preview},
+                load_videos())
+            if prediction:
+                print(f"   🔮 Prognose: {prediction['views']} Views "
+                      f"({prediction['confidence']}) — Risiko: {prediction['biggest_risk']}")
+        except Exception as e:
+            print(f"   ⚠️ Prognose übersprungen: {e}")
+
         save_video_metadata(idx + 1, {
+            "prediction": prediction,
             "title": trend["title"],
             "youtube_title": yt_title,
             "source": trend.get("source", ""),
