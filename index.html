@@ -121,7 +121,7 @@ function render(videos){
     statCard('Videos gebaut',total,total?`zuletzt ${fmtDate(last.created_at)}`:'',false),
     statCard('Ø Länge',avg,'',false),
     statCard('Auf YouTube',onYt,wait?`${wait} wartet auf Freigabe`:'',false),
-    statCard('Öffentlich',pub,pub?'':'noch nichts veröffentlicht',!pub),
+    statCard('Öffentlich',pub,wait?`${wait} warten auf Freigabe`:'',!pub),
     statCard('Views','Keine Daten','verfügbar nach Veröffentlichung',true),
   ].join('');
 
@@ -131,12 +131,14 @@ function render(videos){
       return;
   }
   box.innerHTML=videos.slice().reverse().map(v=>{
-    const isPub=v.upload_status==='public';
+    const st=v.upload_status||'';
+    const isPub=st==='public';
     const onYT=!!v.youtube_id;
-    const state=isPub
-      ? '<span class="badge b-ok">öffentlich</span>'
-      : onYT ? '<span class="badge b-warn">nicht gelistet</span>'
-             : '<span class="badge b-mut">nicht hochgeladen</span>';
+    let state;
+    if(!onYT)            state='<span class="badge b-mut">nicht hochgeladen</span>';
+    else if(isPub)       state='<span class="badge b-ok">öffentlich</span>';
+    else if(st==='private') state='<span class="badge b-warn">privat</span>';
+    else                 state='<span class="badge b-warn">nicht gelistet</span>';
     const cap=v.captions==='karaoke'
       ? '<span class="badge b-info">Karaoke</span>' : '<span class="badge b-mut">Block</span>';
     const shown=v.youtube_title||v.title||'(ohne Titel)';
