@@ -72,16 +72,16 @@ def send_telegram_alert(message: str, emoji: str = "📊"):
 # ============================================================================
 
 def fetch_trending_topics() -> List[Dict]:
-    """Fetch candidate headlines across several categories (not just politics)."""
+    """Fetch news from the channel's niche only: science, tech, health."""
     topics, seen = [], set()
-    categories = ["general", "science", "technology", "health"]
+    categories = ["science", "technology", "health"]
 
     for cat in categories:
         try:
             response = requests.get(
                 "https://newsapi.org/v2/top-headlines",
                 params={"country": "us", "category": cat,
-                        "apiKey": NEWSAPI_KEY, "pageSize": 5},
+                        "apiKey": NEWSAPI_KEY, "pageSize": 6},
                 timeout=15,
             )
             for article in response.json().get("articles", []):
@@ -99,11 +99,7 @@ def fetch_trending_topics() -> List[Dict]:
         except Exception as e:
             print(f"⚠️ NewsAPI '{cat}' fehlgeschlagen: {e}")
 
-    if not topics:
-        print("❌ Keine Headlines — die KI arbeitet nur mit Evergreen-Ideen")
-        send_telegram_alert("NewsAPI lieferte nichts — nutze Evergreen-Themen", "⚠️")
-
-    print(f"📊 {len(topics)} Kandidaten aus {len(categories)} Kategorien")
+    print(f"📊 {len(topics)} News-Kandidaten aus {categories}")
     return topics
 
 # ============================================================================
@@ -130,11 +126,14 @@ DRAFT:
 Step 1 — Attack the draft honestly. Be specific and brutal:
 - Would a scroller stop in the first 2 seconds? If not, WHY not?
 - Is the single most surprising fact in the first sentence, or buried?
+- FACT CHECK: is every claim scientifically accurate? Flag anything that is
+  a pop-science myth, an exaggeration, or a number you are not sure about.
+  A science channel that gets facts wrong is worthless.
+- Does the viewer actually LEARN why/how, or is it just "wow, amazing"?
 - Any sentence that adds nothing? Any setup before the payoff?
-- Is it concrete (numbers, specifics) or vague filler?
-- Does it stay respectful if the topic is tragic?
 
-Step 2 — Rewrite it, fixing every problem you found.
+Step 2 — Rewrite it, fixing every problem you found. Remove or correct any
+claim you could not verify.
 
 Return ONLY this JSON:
 {{"critique": "<your honest criticism, 2-3 sentences>",
@@ -188,17 +187,20 @@ Follow it. It is the accumulated memory of what works here:
 TRENDING TOPIC: {trend_topic['title']}
 DESCRIPTION: {trend_topic.get('description', 'N/A')}
 
-STYLE — this is read aloud FAST by an energetic narrator:
-- Punchy hook in the first sentence. No throat-clearing.
+STYLE — this is a SCIENCE channel, read aloud FAST by an energetic narrator:
+- Punchy hook in the first sentence. Lead with the single most surprising fact.
+  No context, no setup, no "did you know".
 - SHORT sentences. Aim for 6-12 words each. No long clauses.
 - NO ellipses (...), NO dashes, NO stage directions, NO "dramatic pause".
   Those create dead air and kill the pacing.
 - Plain punctuation only: periods, commas, question marks.
-- Concrete facts and numbers beat adjectives.
+- Concrete numbers and specifics beat adjectives.
+- The viewer must feel SMARTER at the end. Explain the "why" or "how",
+  do not just state that something is amazing.
+- Everything must be scientifically accurate. No pop-science myths, no
+  invented statistics. If you are unsure of a number, leave it out.
 - End with a short call to action (max 6 words).
 - 45-70 seconds when read aloud at a fast pace.
-- If the topic is tragic (death, war, disaster), stay factual and respectful.
-  Never sensationalize a tragedy.
 
 Return ONLY the spoken words. No labels, no timestamps, no formatting."""
 
