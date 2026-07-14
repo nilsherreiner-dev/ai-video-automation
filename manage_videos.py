@@ -17,7 +17,8 @@ from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 
 SCOPES = ["https://www.googleapis.com/auth/youtube.upload",
-          "https://www.googleapis.com/auth/youtube"]
+          "https://www.googleapis.com/auth/youtube",
+          "https://www.googleapis.com/auth/yt-analytics.readonly"]
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_FILE = os.path.join(SCRIPT_DIR, "data", "videos.json")
 
@@ -51,7 +52,8 @@ def save(videos):
         json.dump(videos, f, indent=2)
 
 
-def youtube_service():
+def credentials():
+    """Authorized credentials (also used by the analytics client)."""
     raw = os.getenv("GOOGLE_AUTH_JSON")
     if not raw:
         raise RuntimeError("GOOGLE_AUTH_JSON not set")
@@ -60,7 +62,11 @@ def youtube_service():
         if not creds.refresh_token:
             raise RuntimeError("token JSON has no refresh_token")
         creds.refresh(Request())
-    return build("youtube", "v3", credentials=creds)
+    return creds
+
+
+def youtube_service():
+    return build("youtube", "v3", credentials=credentials())
 
 
 def publish(youtube_id: str):
