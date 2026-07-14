@@ -2,7 +2,7 @@ name: Daily AI Video Automation
 
 on:
   schedule:
-    - cron: '0 9 * * *'
+    - cron: '0 5 * * *'   # 5:00 UTC = 7:00 deutscher Sommerzeit
   workflow_dispatch:
 
 permissions:
