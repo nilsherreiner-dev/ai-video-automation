@@ -86,7 +86,7 @@ def fetch_trending_topics() -> List[Dict]:
                 "url": article.get("url", "")
             })
         
-        return topics[:5]  # Top 5 trends
+        return topics[:10]  # candidate pool — the brain picks from these
     except Exception as e:
         print(f"❌ Trend fetch error: {e}")
         send_telegram_alert(f"Trend fetch failed: {e}", "❌")
@@ -97,13 +97,23 @@ def fetch_trending_topics() -> List[Dict]:
 # ============================================================================
 
 def generate_video_script(trend_topic: Dict) -> str:
-    """Generate viral video script using Claude"""
+    """Generate viral video script using Claude, guided by the channel playbook."""
     try:
         from anthropic import Anthropic
-        
+
         client = Anthropic(api_key=ANTHROPIC_API_KEY)
-        
+
+        try:
+            from brain import load_playbook
+            playbook = load_playbook()
+        except Exception:
+            playbook = ""
+
         prompt = f"""Write a viral YouTube Shorts voiceover script about this topic.
+
+CHANNEL PLAYBOOK — everything this channel has learned so far.
+Follow it. It is the accumulated memory of what works here:
+{playbook}
 
 TRENDING TOPIC: {trend_topic['title']}
 DESCRIPTION: {trend_topic.get('description', 'N/A')}
@@ -111,7 +121,7 @@ DESCRIPTION: {trend_topic.get('description', 'N/A')}
 STYLE — this is read aloud FAST by an energetic narrator:
 - Punchy hook in the first sentence. No throat-clearing.
 - SHORT sentences. Aim for 6-12 words each. No long clauses.
-- NO ellipses (...), NO dashes (—), NO stage directions, NO "dramatic pause".
+- NO ellipses (...), NO dashes, NO stage directions, NO "dramatic pause".
   Those create dead air and kill the pacing.
 - Plain punctuation only: periods, commas, question marks.
 - Concrete facts and numbers beat adjectives.
@@ -486,7 +496,15 @@ def run_daily_automation():
     
     # Process top 2 trends
     videos_created = 0
-    for idx, trend in enumerate(trends[:2]):
+    # Let the brain pick the most promising topics (playbook-guided)
+    try:
+        from brain import select_topics
+        chosen = select_topics(trends, want=2)
+    except Exception as e:
+        print(f"⚠️ Themenwahl übersprungen ({e})")
+        chosen = trends[:2]
+
+    for idx, trend in enumerate(chosen):
         print(f"\n📹 Processing Video #{idx + 1}")
         print(f"   Trend: {trend['title']}")
         
