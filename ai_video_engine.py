@@ -65,32 +65,39 @@ def send_telegram_alert(message: str, emoji: str = "📊"):
 # ============================================================================
 
 def fetch_trending_topics() -> List[Dict]:
-    """Fetch trending topics from NewsAPI"""
-    try:
-        url = "https://newsapi.org/v2/top-headlines"
-        params = {
-            "country": "us",
-            "apiKey": NEWSAPI_KEY,
-            "pageSize": 10,
-            "sortBy": "popularity"
-        }
-        response = requests.get(url, params=params, timeout=10)
-        articles = response.json().get("articles", [])
-        
-        topics = []
-        for article in articles:
-            topics.append({
-                "title": article["title"],
-                "description": article.get("description", ""),
-                "source": article["source"]["name"],
-                "url": article.get("url", "")
-            })
-        
-        return topics[:10]  # candidate pool — the brain picks from these
-    except Exception as e:
-        print(f"❌ Trend fetch error: {e}")
-        send_telegram_alert(f"Trend fetch failed: {e}", "❌")
-        return []
+    """Fetch candidate headlines across several categories (not just politics)."""
+    topics, seen = [], set()
+    categories = ["general", "science", "technology", "health"]
+
+    for cat in categories:
+        try:
+            response = requests.get(
+                "https://newsapi.org/v2/top-headlines",
+                params={"country": "us", "category": cat,
+                        "apiKey": NEWSAPI_KEY, "pageSize": 5},
+                timeout=15,
+            )
+            for article in response.json().get("articles", []):
+                title = (article.get("title") or "").strip()
+                if not title or title in seen:
+                    continue
+                seen.add(title)
+                topics.append({
+                    "title": title,
+                    "description": article.get("description") or "",
+                    "source": (article.get("source") or {}).get("name", ""),
+                    "url": article.get("url", ""),
+                    "kind": f"news/{cat}",
+                })
+        except Exception as e:
+            print(f"⚠️ NewsAPI '{cat}' fehlgeschlagen: {e}")
+
+    if not topics:
+        print("❌ Keine Headlines — die KI arbeitet nur mit Evergreen-Ideen")
+        send_telegram_alert("NewsAPI lieferte nichts — nutze Evergreen-Themen", "⚠️")
+
+    print(f"📊 {len(topics)} Kandidaten aus {len(categories)} Kategorien")
+    return topics
 
 # ============================================================================
 # SCRIPT GENERATION (Claude AI)
@@ -450,6 +457,7 @@ def save_video_metadata(video_id: int, data: Dict):
             "created_at": datetime.utcnow().isoformat(timespec="seconds") + "Z",
             "title": data.get("title", ""),
             "youtube_title": data.get("youtube_title", ""),
+            "kind": data.get("kind", "news"),
             "source": data.get("source", ""),
             "keywords": data.get("keywords", []),
             "duration_sec": _video_duration(video_path) if video_path else 0.0,
@@ -489,20 +497,24 @@ def run_daily_automation():
     trends = fetch_trending_topics()
     
     if not trends:
-        send_telegram_alert("No trends found today", "❌")
-        return
-    
-    send_telegram_alert(f"Daily automation started\n📊 Found {len(trends)} trending topics", "🚀")
+        print("ℹ️ Keine News — die KI arbeitet nur mit eigenen Themen")
+
+    send_telegram_alert(f"Daily automation started\n📊 {len(trends)} News-Kandidaten "
+                        f"+ eigene Themenideen", "🚀")
     
     # Process top 2 trends
     videos_created = 0
-    # Let the brain pick the most promising topics (playbook-guided)
+    # Let the brain pick today's topics (news + its own evergreen ideas)
     try:
         from brain import select_topics
         chosen = select_topics(trends, want=2)
     except Exception as e:
         print(f"⚠️ Themenwahl übersprungen ({e})")
         chosen = trends[:2]
+
+    if not chosen:
+        send_telegram_alert("Keine Themen gefunden — Lauf abgebrochen", "❌")
+        return
 
     for idx, trend in enumerate(chosen):
         print(f"\n📹 Processing Video #{idx + 1}")
@@ -570,6 +582,7 @@ def run_daily_automation():
             "title": trend["title"],
             "youtube_title": yt_title,
             "source": trend.get("source", ""),
+            "kind": trend.get("kind", "news"),
             "keywords": keywords,
             "script": clean_preview,
             "video_path": video_file,
