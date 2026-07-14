@@ -78,6 +78,55 @@ def handle_reject(youtube_id: str) -> str:
         return f"❌ Konnte nicht löschen: {e}"
 
 
+def do_sync() -> str:
+    """Ask YouTube what is really true and fix the dashboard log.
+
+    - entries whose video no longer exists  -> removed
+    - entries whose video is public/unlisted -> status corrected
+    """
+    videos = mv.load()
+    with_id = [v for v in videos if v.get("youtube_id")]
+    if not with_id:
+        return "Nichts zu synchronisieren."
+
+    try:
+        yt = mv.youtube_service()
+        ids = [v["youtube_id"] for v in with_id]
+        privacy = {}
+        for i in range(0, len(ids), 50):
+            resp = yt.videos().list(part="status",
+                                    id=",".join(ids[i:i + 50])).execute()
+            for item in resp.get("items", []):
+                privacy[item["id"]] = item["status"].get("privacyStatus", "unknown")
+    except Exception as e:
+        return f"❌ Konnte YouTube nicht abfragen: {e}"
+
+    kept, removed, fixed = [], 0, 0
+    for v in videos:
+        yid = v.get("youtube_id")
+        if not yid:
+            kept.append(v)          # never uploaded: /cleanup handles those
+            continue
+        if yid not in privacy:
+            removed += 1            # video no longer on YouTube
+            continue
+        status = privacy[yid]       # public | unlisted | private
+        if v.get("upload_status") != status:
+            v["upload_status"] = status
+            fixed += 1
+        kept.append(v)
+
+    mv.save(kept)
+
+    pub = sum(1 for v in kept if v.get("upload_status") == "public")
+    wait = sum(1 for v in kept
+               if v.get("youtube_id") and v.get("upload_status") != "public")
+    return (f"🔄 Sync fertig.\n"
+            f"• {fixed} Status korrigiert\n"
+            f"• {removed} gelöschte Videos entfernt\n"
+            f"• {pub} öffentlich, {wait} warten auf Freigabe")
+
+
 def do_cleanup() -> str:
     """Remove log entries that were never uploaded (no YouTube video)."""
     videos = mv.load()
@@ -116,13 +165,16 @@ def do_prune() -> str:
 
 def list_pending() -> str:
     pending = [v for v in mv.load()
-               if v.get("youtube_id") and v.get("upload_status") != "public"]
+               if v.get("youtube_id")
+               and v.get("upload_status") not in ("public",)]
     if not pending:
-        return "✅ Nichts offen — alle Videos sind entweder veröffentlicht oder weg."
-    lines = ["⏳ Warten auf Freigabe:"]
+        return "✅ Nichts offen — alles veröffentlicht oder weg."
+    lines = [f"⏳ {len(pending)} warten auf Freigabe:"]
     for v in pending:
-        lines.append(f"• {v.get('youtube_title') or v.get('title')}\n"
-                     f"  https://youtu.be/{v['youtube_id']}")
+        lines.append(f"\n• {v.get('youtube_title') or v.get('title')}\n"
+                     f"  https://youtu.be/{v['youtube_id']}\n"
+                     f"  /publish {v['youtube_id']}")
+    lines.append("\n(Tipp: /sync gleicht zuerst mit YouTube ab)")
     return "\n".join(lines)
 
 
@@ -171,6 +223,8 @@ def main():
         print(f"→ message: {text}")
         if text.startswith("/pending"):
             send(list_pending())
+        elif text.startswith("/sync"):
+            send(do_sync())
         elif text.startswith("/cleanup"):
             send(do_cleanup())
         elif text.startswith("/prune"):
@@ -183,10 +237,10 @@ def main():
                 send("Nutzung: /publish <youtube_id>")
         elif text.startswith("/help") or text.startswith("/start"):
             send("Befehle:\n"
+                 "/sync — Dashboard mit YouTube abgleichen (Status + gelöschte)\n"
                  "/pending — Videos, die auf Freigabe warten\n"
-                 "/cleanup — Dashboard: nie hochgeladene Einträge entfernen\n"
-                 "/prune — Dashboard: Einträge entfernen, deren Video auf "
-                 "YouTube nicht mehr existiert\n"
+                 "/cleanup — nie hochgeladene Einträge entfernen\n"
+                 "/prune — Einträge ohne YouTube-Video entfernen\n"
                  "/publish <id> — Video öffentlich schalten")
 
     _save_offset(max_id)
