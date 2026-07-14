@@ -192,7 +192,9 @@
     "script_preview": "Diamond hailstones the size of your fist are falling through Neptune right now. Neptune's atmosphere contains methane. When lightning strikes, it shatters metha",
     "preview_file": "preview/video_1.mp4",
     "youtube_id": "BKZccOtierk",
-    "upload_status": "uploaded"
+    "upload_status": "public",
+    "approved": true,
+    "published_at": "2026-07-14T18:47+00:00"
   },
   {
     "run_id": "20260714-184645",
