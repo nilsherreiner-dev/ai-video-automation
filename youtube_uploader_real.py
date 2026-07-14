@@ -281,10 +281,11 @@ def upload_all_videos():
                 + (f"Source: {source}\n" if source else "")
                 + "\nFootage: Pexels (royalty-free)\n"
                 "Voiceover: AI-generated\n\n"
-                "Subscribe for daily trending shorts!\n"
-                "#shorts #viral #trending #news"
+                "Subscribe for daily science, discoveries and inventions!\n"
+                "#shorts #science #technology #facts"
             )
-            tags = ["shorts", "viral", "trending", "news", "NeuronOverload"]
+            tags = ["shorts", "science", "technology", "facts", "discovery",
+                    "NeuronOverload"]
             tags += [k for k in keywords if isinstance(k, str)][:3]
             
             video_path = os.path.join(output_dir, video_file)
