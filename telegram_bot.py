@@ -58,10 +58,28 @@ def answer_callback(cb_id: str, text: str):
         pass
 
 
+def handle_approve(youtube_id: str) -> str:
+    """Approve = hand over to the scheduler, which picks the best time."""
+    try:
+        import scheduler
+        scheduler.schedule_video(youtube_id)   # sends its own detailed message
+        return "✅ Freigegeben — Zeitpunkt wird geplant."
+    except Exception as e:
+        return f"❌ Konnte nicht freigeben: {e}"
+
+
 def handle_publish(youtube_id: str) -> str:
+    """Publish immediately, bypassing the schedule."""
     try:
         mv.publish(youtube_id)
-        return f"🚀 Veröffentlicht: https://youtu.be/{youtube_id}"
+        from datetime import datetime, timezone
+        videos = mv.load()
+        for v in videos:
+            if v.get("youtube_id") == youtube_id:
+                v["approved"] = True
+                v["published_at"] = datetime.now(timezone.utc).isoformat(timespec="minutes")
+        mv.save(videos)
+        return f"🚀 Sofort veröffentlicht: https://youtu.be/{youtube_id}"
     except Exception as e:
         return f"❌ Konnte nicht veröffentlichen: {e}"
 
@@ -163,18 +181,35 @@ def do_prune() -> str:
             f"Im Dashboard verbleiben: {len(kept)}")
 
 
+def list_queue() -> str:
+    """Approved videos waiting for their scheduled publish time."""
+    q = [v for v in mv.load()
+         if v.get("approved") and v.get("upload_status") != "public"
+         and v.get("scheduled_for")]
+    if not q:
+        return "📭 Nichts in der Warteschlange."
+    q.sort(key=lambda v: v["scheduled_for"])
+    lines = [f"🗓️ {len(q)} geplant:"]
+    for v in q:
+        lines.append(f"\n• {v.get('youtube_title') or v.get('title')}\n"
+                     f"  ⏰ {v['scheduled_for']} UTC ({v.get('schedule_confidence','?')})\n"
+                     f"  💭 {v.get('schedule_reason','')}\n"
+                     f"  /now {v['youtube_id']} — sofort raus")
+    return "\n".join(lines)
+
+
 def list_pending() -> str:
     pending = [v for v in mv.load()
                if v.get("youtube_id")
-               and v.get("upload_status") not in ("public",)]
+               and v.get("upload_status") != "public"
+               and not v.get("approved")]
     if not pending:
-        return "✅ Nichts offen — alles veröffentlicht oder weg."
-    lines = [f"⏳ {len(pending)} warten auf Freigabe:"]
+        return "✅ Nichts offen — alles freigegeben, veröffentlicht oder weg."
+    lines = [f"⏳ {len(pending)} warten auf Review:"]
     for v in pending:
         lines.append(f"\n• {v.get('youtube_title') or v.get('title')}\n"
                      f"  https://youtu.be/{v['youtube_id']}\n"
-                     f"  /publish {v['youtube_id']}")
-    lines.append("\n(Tipp: /sync gleicht zuerst mit YouTube ab)")
+                     f"  /publish {v['youtube_id']} — freigeben")
     return "\n".join(lines)
 
 
@@ -206,7 +241,9 @@ def main():
         if cb:
             data = (cb.get("data") or "").strip()
             print(f"→ callback: {data}")
-            if data.startswith("publish:"):
+            if data.startswith("approve:"):
+                msg = handle_approve(data.split(":", 1)[1])
+            elif data.startswith("publish:"):
                 msg = handle_publish(data.split(":", 1)[1])
             elif data.startswith("reject:"):
                 msg = handle_reject(data.split(":", 1)[1])
@@ -223,25 +260,31 @@ def main():
         print(f"→ message: {text}")
         if text.startswith("/pending"):
             send(list_pending())
+        elif text.startswith("/queue"):
+            send(list_queue())
         elif text.startswith("/sync"):
             send(do_sync())
         elif text.startswith("/cleanup"):
             send(do_cleanup())
         elif text.startswith("/prune"):
             send(do_prune())
+        elif text.startswith("/now"):
+            parts = text.split()
+            send(handle_publish(parts[1]) if len(parts) >= 2
+                 else "Nutzung: /now <youtube_id>")
         elif text.startswith("/publish"):
             parts = text.split()
-            if len(parts) >= 2:
-                send(handle_publish(parts[1]))
-            else:
-                send("Nutzung: /publish <youtube_id>")
+            send(handle_approve(parts[1]) if len(parts) >= 2
+                 else "Nutzung: /publish <youtube_id>")
         elif text.startswith("/help") or text.startswith("/start"):
             send("Befehle:\n"
-                 "/sync — Dashboard mit YouTube abgleichen (Status + gelöschte)\n"
-                 "/pending — Videos, die auf Freigabe warten\n"
+                 "/pending — wartet auf Freigabe\n"
+                 "/queue — freigegeben, wartet auf geplanten Zeitpunkt\n"
+                 "/publish <id> — freigeben (KI wählt Zeitpunkt)\n"
+                 "/now <id> — sofort veröffentlichen\n"
+                 "/sync — Dashboard mit YouTube abgleichen\n"
                  "/cleanup — nie hochgeladene Einträge entfernen\n"
-                 "/prune — Einträge ohne YouTube-Video entfernen\n"
-                 "/publish <id> — Video öffentlich schalten")
+                 "/prune — Einträge ohne YouTube-Video entfernen")
 
     _save_offset(max_id)
     print(f"✅ {len(updates)} Update(s) verarbeitet")
