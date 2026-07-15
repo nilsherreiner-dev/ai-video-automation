@@ -269,18 +269,27 @@ def generate_youtube_title(trend_topic: Dict, script: str) -> str:
 
 
 def extract_keywords(trend_topic: Dict) -> List[str]:
-    """Ask Claude for 3 short visual search terms for stock footage."""
+    """Visual stock-footage search terms. Concrete objects, not abstract ideas."""
     try:
         from anthropic import Anthropic
         client = Anthropic(api_key=ANTHROPIC_API_KEY)
         prompt = (
-            "Give exactly 3 short visual stock-footage search terms (1-2 words each) "
-            "that would make good B-roll for a short video about this headline. "
-            "Return ONLY the 3 terms separated by commas, nothing else.\n\n"
-            f"Headline: {trend_topic['title']}"
+            "Give 4 stock-footage search terms for B-roll behind a short video "
+            "about this topic.\n\n"
+            f"TOPIC: {trend_topic['title']}\n"
+            f"DETAIL: {trend_topic.get('description', '')[:200]}\n\n"
+            "CRITICAL: stock libraries only have footage of CONCRETE, FILMABLE "
+            "things. Abstract concepts return garbage.\n"
+            "- BAD: 'Neptune atmosphere', 'quantum entanglement', 'evolution'\n"
+            "  (no stock footage exists -> the search returns random junk)\n"
+            "- GOOD: 'blue swirling clouds', 'stars night sky', 'telescope',\n"
+            "  'laboratory equipment', 'glowing particles'\n\n"
+            "Give 1-3 word terms describing things a camera could actually film "
+            "that visually evoke the topic.\n"
+            "Return ONLY the 4 terms, comma separated, nothing else."
         )
         resp = client.messages.create(
-            model="claude-sonnet-4-5", max_tokens=60,
+            model="claude-sonnet-4-5", max_tokens=80,
             messages=[{"role": "user", "content": prompt}],
         )
         text = ""
@@ -289,10 +298,10 @@ def extract_keywords(trend_topic: Dict) -> List[str]:
                 text = block.text
                 break
         terms = [t.strip() for t in text.replace("\n", ",").split(",") if t.strip()]
-        return terms[:3] or ["news", "city", "technology"]
+        return terms[:4] or ["science laboratory", "abstract technology"]
     except Exception as e:
         print(f"⚠️ Keyword extraction failed: {e}")
-        return ["news", "city", "technology"]
+        return ["science laboratory", "abstract technology"]
 
 
 def _speed_up_audio(audio_path: str, factor: float) -> bool:
@@ -614,8 +623,12 @@ def run_daily_automation():
             keywords = extract_keywords(trend)
             print(f"   🔎 Footage keywords: {keywords}")
             clip_dir = os.path.join(OUTPUT_DIR, f"clips_{idx + 1}")
+            # category drives the safe fallback (space -> stars, neuro -> brain...)
+            cat = (trend.get("source", "") or "").split("/")[-1] \
+                if trend.get("kind") == "evergreen" else "default"
             bg_clips, credits = get_background_clips(
-                trend["title"], keywords, clip_dir, source="stock")
+                f"{trend['title']} — {trend.get('description', '')[:150]}",
+                keywords, clip_dir, source="stock", category=cat)
             # load word timings for karaoke captions if available
             words_file = os.path.join(OUTPUT_DIR, f"video_{idx + 1}_words.json")
             if os.path.exists(words_file):
