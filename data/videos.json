@@ -236,5 +236,95 @@
     "schedule_confidence": "low",
     "predicted_at": "2026-07-14T18:54+00:00",
     "published_at": "2026-07-15T07:12+00:00"
+  },
+  {
+    "run_id": "20260715-072213",
+    "slot": 1,
+    "created_at": "2026-07-15T07:22:13Z",
+    "title": "Tardigrades Survive Being Shot Out of a Gun",
+    "youtube_title": "How Tardigrades Survived Being Shot From a Gun",
+    "kind": "evergreen",
+    "prediction": {
+      "views": 150,
+      "reasoning": "Tardigrades are a known science curiosity with viral potential, but the hook is weak ('they're already basic' is confusing, not punchy), and my only evergreen comparison got 2 views despite predicting",
+      "confidence": "low",
+      "biggest_risk": "Hook doesn't deliver the 'wait, WHAT' payoff",
+      "made_at": "2026-07-15T07:22+00:00"
+    },
+    "source": "evergreen/biology",
+    "keywords": [
+      "microscope tardigrade closeup",
+      "gun barrel firing",
+      "sand impact slow motion",
+      "laboratory scientist equipment"
+    ],
+    "duration_sec": 49.1,
+    "captions": "karaoke",
+    "footage": "stock",
+    "clips": 3,
+    "script_preview": "Tardigrades survived being shot out of a gun at 900 meters per second. Nearly three times the speed of sound. They lived because they're already basically dead.",
+    "preview_file": "preview/video_1.mp4",
+    "youtube_id": "ax7nNxCRIDk",
+    "upload_status": "uploaded"
+  },
+  {
+    "run_id": "20260715-072427",
+    "slot": 2,
+    "created_at": "2026-07-15T07:24:27Z",
+    "title": "New 3D thermal cloak hides objects from heat in any direction - Phys.org",
+    "youtube_title": "The Thermal Cloak That Makes Objects Disappear From Heat Sensors",
+    "kind": "news/science",
+    "prediction": {
+      "views": 180,
+      "reasoning": "Thermal cloaking is genuinely interesting science but lacks the immediate visceral hook of the Neptune diamonds video (which also flopped), and the channel has no established audience yet\u2014even the bes",
+      "confidence": "low",
+      "biggest_risk": "Zero algorithmic traction on new channel",
+      "made_at": "2026-07-15T07:24+00:00"
+    },
+    "source": "Phys.Org",
+    "keywords": [
+      "thermal imaging camera",
+      "circuit board closeup",
+      "infrared heat vision",
+      "microchip manufacturing"
+    ],
+    "duration_sec": 61.2,
+    "captions": "karaoke",
+    "footage": "stock",
+    "clips": 3,
+    "script_preview": "An object just vanished from thermal cameras. Not by blocking heat. By bending it. Researchers built a 3D thermal cloak that hides objects from infrared detecti",
+    "preview_file": "preview/video_2.mp4",
+    "youtube_id": "3h6d-3RlgbA",
+    "upload_status": "uploaded"
+  },
+  {
+    "run_id": "20260715-072608",
+    "slot": 3,
+    "created_at": "2026-07-15T07:26:08Z",
+    "title": "Aerogel Holds 4,000 Times Its Weight But Feels Like Air",
+    "youtube_title": "The Material That's 99.8% Air Yet Holds 4,000x Its Weight",
+    "kind": "evergreen",
+    "prediction": {
+      "views": 150,
+      "reasoning": "Aerogel is a strong evergreen science topic that fits the niche perfectly, but the channel has zero proven audience and the one previous evergreen video (Neptune diamonds) got only 2 views despite see",
+      "confidence": "low",
+      "biggest_risk": "No established audience to seed distribution",
+      "made_at": "2026-07-15T07:26+00:00"
+    },
+    "source": "evergreen/materials",
+    "keywords": [
+      "aerogel blue material",
+      "hand holding foam",
+      "weight compression test",
+      "transparent gel block"
+    ],
+    "duration_sec": 48.7,
+    "captions": "karaoke",
+    "footage": "stock",
+    "clips": 3,
+    "script_preview": "Aerogel can hold 4,000 times its own weight but it's 99.8% air. How? Scientists start with silica gel, then use supercritical carbon dioxide to swap all the liq",
+    "preview_file": "preview/video_3.mp4",
+    "youtube_id": "euq1ZlGU5vo",
+    "upload_status": "uploaded"
   }
 ]
