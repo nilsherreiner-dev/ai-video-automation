@@ -13,6 +13,7 @@ Also supports typed commands:
 
 import os
 import json
+import time
 import requests
 
 import manage_videos as mv
@@ -213,52 +214,17 @@ def list_pending() -> str:
     return "\n".join(lines)
 
 
-def main():
-    if not TOKEN or not CHAT_ID:
-        print("❌ TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID missing")
-        return
-
-    offset = _load_offset()
-    try:
-        r = requests.get(
-            f"{API}/getUpdates",
-            params={
-                "offset": offset + 1,
-                "timeout": 0,
-                # MUST be explicit: Telegram remembers the last allowed_updates
-                # server-side. Without callback_query the inline buttons are
-                # silently dropped and nothing ever happens.
-                "allowed_updates": json.dumps(["message", "callback_query"]),
-            },
-            timeout=20)
-        payload = r.json()
-        if not payload.get("ok"):
-            print(f"❌ getUpdates: {payload}")
-            return
-        updates = payload.get("result", [])
-    except Exception as e:
-        print(f"❌ getUpdates failed: {e}")
-        return
-
-    if not updates:
-        print("ℹ️ Keine neuen Updates")
-        return
-
-    print(f"📥 {len(updates)} Update(s): "
-          f"{[('callback' if 'callback_query' in u else 'message') for u in updates]}")
-
-    max_id = offset
+def process_updates(updates):
+    """Handle a batch of updates. Returns the highest update_id seen."""
+    max_id = 0
     for upd in updates:
         max_id = max(max_id, upd.get("update_id", 0))
 
-        # --- inline button presses ---
         cb = upd.get("callback_query")
         if cb:
             data = (cb.get("data") or "").strip()
-            cb_id = cb.get("id", "")
             print(f"→ callback: {data}")
-            # clear the spinner first; the real work can take a few seconds
-            answer_callback(cb_id, "Wird verarbeitet…")
+            answer_callback(cb.get("id", ""), "Wird verarbeitet…")
             if data.startswith("approve:"):
                 msg = handle_approve(data.split(":", 1)[1])
             elif data.startswith("publish:"):
@@ -270,58 +236,115 @@ def main():
             send(msg)
             continue
 
-        # --- typed commands ---
         text = ((upd.get("message") or {}).get("text") or "").strip()
         if not text:
             continue
         print(f"→ message: {text}")
-        if text.startswith("/playbook"):
-            try:
-                import brain
-                send(brain.load_playbook()[:3900])
-            except Exception as e:
-                send(f"❌ {e}")
-        elif text.startswith("/reflect"):
-            try:
-                import brain
-                send("🧠 Analysiere alle Ergebnisse…")
-                brain.reflect()
-            except Exception as e:
-                send(f"❌ Reflexion fehlgeschlagen: {e}")
-        elif text.startswith("/pending"):
-            send(list_pending())
-        elif text.startswith("/queue"):
-            send(list_queue())
-        elif text.startswith("/sync"):
-            send(do_sync())
-        elif text.startswith("/cleanup"):
-            send(do_cleanup())
-        elif text.startswith("/prune"):
-            send(do_prune())
-        elif text.startswith("/now"):
-            parts = text.split()
-            send(handle_publish(parts[1]) if len(parts) >= 2
-                 else "Welches Video? Hier die offenen:\n\n" + list_pending())
-        elif text.startswith("/publish"):
-            parts = text.split()
-            send(handle_approve(parts[1]) if len(parts) >= 2
-                 else "Welches Video? Hier die offenen:\n\n" + list_pending())
-        elif text.startswith("/help") or text.startswith("/start"):
-            send("Befehle:\n"
-                 "/pending — wartet auf Freigabe\n"
-                 "/queue — freigegeben, wartet auf Zeitpunkt\n"
-                 "/publish <id> — freigeben (KI wählt Zeitpunkt)\n"
-                 "/now <id> — sofort veröffentlichen\n"
-                 "\n🧠 Gehirn:\n"
-                 "/playbook — aktuelle Strategie ansehen\n"
-                 "/reflect — jetzt aus den Zahlen lernen\n"
-                 "\n🧹 Pflege:\n"
-                 "/sync — mit YouTube abgleichen\n"
-                 "/cleanup — nie hochgeladene Einträge weg\n"
-                 "/prune — Einträge ohne Video weg")
+        handle_command(text)
+    return max_id
 
-    _save_offset(max_id)
-    print(f"✅ {len(updates)} Update(s) verarbeitet")
+
+def handle_command(text):
+    if text.startswith("/playbook"):
+        try:
+            import brain
+            send(brain.load_playbook()[:3900])
+        except Exception as e:
+            send(f"❌ {e}")
+    elif text.startswith("/reflect"):
+        try:
+            import brain
+            send("🧠 Analysiere alle Ergebnisse…")
+            brain.reflect()
+        except Exception as e:
+            send(f"❌ Reflexion fehlgeschlagen: {e}")
+    elif text.startswith("/pending"):
+        send(list_pending())
+    elif text.startswith("/queue"):
+        send(list_queue())
+    elif text.startswith("/sync"):
+        send(do_sync())
+    elif text.startswith("/cleanup"):
+        send(do_cleanup())
+    elif text.startswith("/prune"):
+        send(do_prune())
+    elif text.startswith("/now"):
+        parts = text.split()
+        send(handle_publish(parts[1]) if len(parts) >= 2
+             else "Welches Video? Hier die offenen:\n\n" + list_pending())
+    elif text.startswith("/publish"):
+        parts = text.split()
+        send(handle_approve(parts[1]) if len(parts) >= 2
+             else "Welches Video? Hier die offenen:\n\n" + list_pending())
+    elif text.startswith("/help") or text.startswith("/start"):
+        send("Befehle:\n"
+             "/pending — wartet auf Freigabe\n"
+             "/queue — freigegeben, wartet auf Zeitpunkt\n"
+             "/publish <id> — freigeben (KI wählt Zeitpunkt)\n"
+             "/now <id> — sofort veröffentlichen\n"
+             "\n🧠 Gehirn:\n"
+             "/playbook — aktuelle Strategie ansehen\n"
+             "/reflect — jetzt aus den Zahlen lernen\n"
+             "\n🧹 Pflege:\n"
+             "/sync — mit YouTube abgleichen\n"
+             "/cleanup — nie hochgeladene Einträge weg\n"
+             "/prune — Einträge ohne Video weg")
+
+
+def main():
+    """Long-poll for a few minutes so button presses react within SECONDS.
+
+    GitHub cron cannot fire more often than every 5 minutes, so instead of
+    checking once and quitting, we hold a long-polling connection open for
+    most of that window. Telegram pushes updates the moment they happen.
+    """
+    if not TOKEN or not CHAT_ID:
+        print("❌ TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID missing")
+        return
+
+    try:
+        run_seconds = int(os.getenv("BOT_RUN_SECONDS") or "270")  # ~4.5 min
+    except ValueError:
+        run_seconds = 270
+
+    offset = _load_offset()
+    deadline = time.time() + run_seconds
+    handled = 0
+
+    while time.time() < deadline:
+        remaining = int(deadline - time.time())
+        wait = max(1, min(25, remaining))     # Telegram long-poll window
+        try:
+            r = requests.get(
+                f"{API}/getUpdates",
+                params={
+                    "offset": offset + 1,
+                    "timeout": wait,          # server holds the request open
+                    "allowed_updates": json.dumps(["message", "callback_query"]),
+                },
+                timeout=wait + 10)
+            payload = r.json()
+            if not payload.get("ok"):
+                print(f"❌ getUpdates: {payload}")
+                break
+            updates = payload.get("result", [])
+        except requests.exceptions.Timeout:
+            continue
+        except Exception as e:
+            print(f"⚠️ getUpdates: {e}")
+            time.sleep(3)
+            continue
+
+        if not updates:
+            continue
+
+        max_id = process_updates(updates)
+        if max_id:
+            offset = max_id
+            _save_offset(offset)
+            handled += len(updates)
+
+    print(f"✅ {handled} Update(s) verarbeitet in {run_seconds}s Lauschzeit")
 
 
 if __name__ == "__main__":
