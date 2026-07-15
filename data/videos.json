@@ -23,7 +23,7 @@
     "comments": 0,
     "avg_view_pct": 0.0,
     "avg_view_sec": 0.0,
-    "stats_updated": "2026-07-15T06:26+00:00"
+    "stats_updated": "2026-07-15T09:20+00:00"
   },
   {
     "run_id": "20260713-113521",
@@ -49,7 +49,7 @@
     "comments": 0,
     "avg_view_pct": 0.0,
     "avg_view_sec": 0.0,
-    "stats_updated": "2026-07-15T06:26+00:00"
+    "stats_updated": "2026-07-15T09:20+00:00"
   },
   {
     "run_id": "20260713-115634",
@@ -75,7 +75,7 @@
     "comments": 0,
     "avg_view_pct": 0.0,
     "avg_view_sec": 0.0,
-    "stats_updated": "2026-07-15T06:26+00:00"
+    "stats_updated": "2026-07-15T09:20+00:00"
   },
   {
     "run_id": "20260713-115843",
@@ -101,7 +101,7 @@
     "comments": 1,
     "avg_view_pct": 0.0,
     "avg_view_sec": 0.0,
-    "stats_updated": "2026-07-15T06:26+00:00"
+    "stats_updated": "2026-07-15T09:20+00:00"
   },
   {
     "run_id": "20260714-093546",
@@ -129,12 +129,12 @@
     "schedule_confidence": "low",
     "predicted_at": "2026-07-14T12:56+00:00",
     "published_at": "2026-07-14T15:02+00:00",
-    "views": 146,
+    "views": 147,
     "likes": 3,
     "comments": 0,
     "avg_view_pct": 0.0,
     "avg_view_sec": 0.0,
-    "stats_updated": "2026-07-15T06:26+00:00"
+    "stats_updated": "2026-07-15T09:20+00:00"
   },
   {
     "run_id": "20260714-093722",
@@ -163,7 +163,7 @@
     "comments": 0,
     "avg_view_pct": 0.0,
     "avg_view_sec": 0.0,
-    "stats_updated": "2026-07-15T06:26+00:00"
+    "stats_updated": "2026-07-15T09:20+00:00"
   },
   {
     "run_id": "20260714-184414",
@@ -200,7 +200,7 @@
     "comments": 0,
     "avg_view_pct": 0.0,
     "avg_view_sec": 0.0,
-    "stats_updated": "2026-07-15T06:26+00:00"
+    "stats_updated": "2026-07-15T09:20+00:00"
   },
   {
     "run_id": "20260714-184645",
@@ -235,7 +235,13 @@
     "schedule_reason": "No historical data available; scheduling for 8-9 AM US Eastern (high engagement morning hour) as an educated guess for evergreen science content.",
     "schedule_confidence": "low",
     "predicted_at": "2026-07-14T18:54+00:00",
-    "published_at": "2026-07-15T07:12+00:00"
+    "published_at": "2026-07-15T07:12+00:00",
+    "views": 3,
+    "likes": 0,
+    "comments": 0,
+    "avg_view_pct": 0.0,
+    "avg_view_sec": 0.0,
+    "stats_updated": "2026-07-15T09:20+00:00"
   },
   {
     "run_id": "20260715-072213",
