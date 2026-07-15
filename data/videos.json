@@ -23,7 +23,7 @@
     "comments": 0,
     "avg_view_pct": 0.0,
     "avg_view_sec": 0.0,
-    "stats_updated": "2026-07-15T11:47+00:00"
+    "stats_updated": "2026-07-15T14:07+00:00"
   },
   {
     "run_id": "20260713-113521",
@@ -49,7 +49,7 @@
     "comments": 0,
     "avg_view_pct": 0.0,
     "avg_view_sec": 0.0,
-    "stats_updated": "2026-07-15T11:47+00:00"
+    "stats_updated": "2026-07-15T14:07+00:00"
   },
   {
     "run_id": "20260713-115634",
@@ -75,7 +75,7 @@
     "comments": 0,
     "avg_view_pct": 0.0,
     "avg_view_sec": 0.0,
-    "stats_updated": "2026-07-15T11:47+00:00"
+    "stats_updated": "2026-07-15T14:07+00:00"
   },
   {
     "run_id": "20260713-115843",
@@ -101,7 +101,7 @@
     "comments": 1,
     "avg_view_pct": 0.0,
     "avg_view_sec": 0.0,
-    "stats_updated": "2026-07-15T11:47+00:00"
+    "stats_updated": "2026-07-15T14:07+00:00"
   },
   {
     "run_id": "20260714-093546",
@@ -134,7 +134,7 @@
     "comments": 0,
     "avg_view_pct": 0.0,
     "avg_view_sec": 0.0,
-    "stats_updated": "2026-07-15T11:47+00:00"
+    "stats_updated": "2026-07-15T14:07+00:00"
   },
   {
     "run_id": "20260714-093722",
@@ -163,7 +163,7 @@
     "comments": 0,
     "avg_view_pct": 0.0,
     "avg_view_sec": 0.0,
-    "stats_updated": "2026-07-15T11:47+00:00"
+    "stats_updated": "2026-07-15T14:07+00:00"
   },
   {
     "run_id": "20260714-184414",
@@ -200,7 +200,7 @@
     "comments": 0,
     "avg_view_pct": 0.0,
     "avg_view_sec": 0.0,
-    "stats_updated": "2026-07-15T11:47+00:00"
+    "stats_updated": "2026-07-15T14:07+00:00"
   },
   {
     "run_id": "20260714-184645",
@@ -241,7 +241,7 @@
     "comments": 0,
     "avg_view_pct": 0.0,
     "avg_view_sec": 0.0,
-    "stats_updated": "2026-07-15T11:47+00:00"
+    "stats_updated": "2026-07-15T14:07+00:00"
   },
   {
     "run_id": "20260715-072213",
@@ -271,12 +271,19 @@
     "script_preview": "Tardigrades survived being shot out of a gun at 900 meters per second. Nearly three times the speed of sound. They lived because they're already basically dead.",
     "preview_file": "preview/video_1.mp4",
     "youtube_id": "ax7nNxCRIDk",
-    "upload_status": "unlisted",
+    "upload_status": "public",
     "approved": true,
     "scheduled_for": "2026-07-15T13:01+00:00",
     "schedule_reason": "Evergreen science topic with minimal data (3 entries only), publishing at 13:00 UTC (9am ET / 6am PT) to match the best-performing past video's timing.",
     "schedule_confidence": "low",
-    "predicted_at": "2026-07-15T08:01+00:00"
+    "predicted_at": "2026-07-15T08:01+00:00",
+    "published_at": "2026-07-15T14:07+00:00",
+    "views": 0,
+    "likes": 0,
+    "comments": 0,
+    "avg_view_pct": 0.0,
+    "avg_view_sec": 0.0,
+    "stats_updated": "2026-07-15T14:07+00:00"
   },
   {
     "run_id": "20260715-072427",
@@ -306,12 +313,19 @@
     "script_preview": "An object just vanished from thermal cameras. Not by blocking heat. By bending it. Researchers built a 3D thermal cloak that hides objects from infrared detecti",
     "preview_file": "preview/video_2.mp4",
     "youtube_id": "3h6d-3RlgbA",
-    "upload_status": "unlisted",
+    "upload_status": "public",
     "approved": true,
     "scheduled_for": "2026-07-15T14:01+00:00",
     "schedule_reason": "Only 3 data points available (guessing); thermal cloak is evergreen science content, delaying 6 hours puts US audience at early morning (4-7 AM ET) which may capture early viewers, but confidence is l",
     "schedule_confidence": "low",
-    "predicted_at": "2026-07-15T08:01+00:00"
+    "predicted_at": "2026-07-15T08:01+00:00",
+    "published_at": "2026-07-15T14:07+00:00",
+    "views": 1,
+    "likes": 0,
+    "comments": 0,
+    "avg_view_pct": 0.0,
+    "avg_view_sec": 0.0,
+    "stats_updated": "2026-07-15T14:07+00:00"
   },
   {
     "run_id": "20260715-072608",
@@ -341,11 +355,18 @@
     "script_preview": "Aerogel can hold 4,000 times its own weight but it's 99.8% air. How? Scientists start with silica gel, then use supercritical carbon dioxide to swap all the liq",
     "preview_file": "preview/video_3.mp4",
     "youtube_id": "euq1ZlGU5vo",
-    "upload_status": "unlisted",
+    "upload_status": "public",
     "approved": true,
     "scheduled_for": "2026-07-15T13:02+00:00",
     "schedule_reason": "Evergreen science content can wait for optimal US afternoon/evening hours (13:00 UTC = 6-9am US), but sample size is too small to identify reliable patterns confidently.",
     "schedule_confidence": "low",
-    "predicted_at": "2026-07-15T08:02+00:00"
+    "predicted_at": "2026-07-15T08:02+00:00",
+    "published_at": "2026-07-15T14:07+00:00",
+    "views": 2,
+    "likes": 1,
+    "comments": 0,
+    "avg_view_pct": 0.0,
+    "avg_view_sec": 0.0,
+    "stats_updated": "2026-07-15T14:07+00:00"
   }
 ]
