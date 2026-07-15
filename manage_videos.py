@@ -131,14 +131,42 @@ def cleanup():
 
 if __name__ == "__main__":
     action = (os.getenv("ACTION") or "").strip().lower()
+    yid = (os.getenv("YOUTUBE_ID") or "").strip()
+
     if action == "publish":
-        yid = (os.getenv("YOUTUBE_ID") or "").strip()
         if not yid:
             raise SystemExit("YOUTUBE_ID missing")
         publish(yid)
+
+    elif action == "schedule":
+        if not yid:
+            raise SystemExit("YOUTUBE_ID missing")
+        import scheduler
+        scheduler.schedule_video(yid)
+
+    elif action == "reject":
+        if not yid:
+            raise SystemExit("YOUTUBE_ID missing")
+        try:
+            youtube_service().videos().delete(id=yid).execute()
+        except Exception as e:
+            print(f"⚠️ YouTube delete: {e}")
+        save([v for v in load() if v.get("youtube_id") != yid])
+        print(f"🗑️ rejected {yid}")
+
     elif action == "delete":
         delete_entry(os.getenv("RUN_ID", ""), os.getenv("SLOT", ""))
+
     elif action == "cleanup":
         cleanup()
+
+    elif action in ("sync", "prune"):
+        import telegram_bot as tb
+        print(tb.do_sync() if action == "sync" else tb.do_prune())
+
+    elif action == "reflect":
+        import brain
+        brain.reflect()
+
     else:
         raise SystemExit(f"unknown ACTION: {action!r}")
