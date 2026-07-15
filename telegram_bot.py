@@ -60,18 +60,29 @@ def answer_callback(cb_id: str, text: str):
 
 
 def handle_approve(youtube_id: str) -> str:
-    """Approve = hand over to the scheduler, which picks the best time."""
+    """Approve = hand over to the scheduler. Ignores if already done."""
     try:
+        for v in mv.load():
+            if v.get("youtube_id") == youtube_id:
+                if v.get("upload_status") == "public":
+                    return "ℹ️ Ist bereits veröffentlicht."
+                if v.get("approved"):
+                    when = v.get("scheduled_for", "?")
+                    return f"ℹ️ Schon freigegeben — geplant für {when} UTC."
+                break
         import scheduler
-        scheduler.schedule_video(youtube_id)   # sends its own detailed message
+        scheduler.schedule_video(youtube_id)
         return "✅ Freigegeben — Zeitpunkt wird geplant."
     except Exception as e:
         return f"❌ Konnte nicht freigeben: {e}"
 
 
 def handle_publish(youtube_id: str) -> str:
-    """Publish immediately, bypassing the schedule."""
+    """Publish immediately. Ignores if already public."""
     try:
+        for v in mv.load():
+            if v.get("youtube_id") == youtube_id and v.get("upload_status") == "public":
+                return "ℹ️ Ist bereits veröffentlicht."
         mv.publish(youtube_id)
         from datetime import datetime, timezone
         videos = mv.load()
