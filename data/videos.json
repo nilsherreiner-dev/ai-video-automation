@@ -368,5 +368,95 @@
     "avg_view_pct": 0.0,
     "avg_view_sec": 0.0,
     "stats_updated": "2026-07-16T06:30+00:00"
+  },
+  {
+    "run_id": "20260716-072939",
+    "slot": 1,
+    "created_at": "2026-07-16T07:29:39Z",
+    "title": "People stunned after seeing how fast the International Space Station actually moves as wild simulation shows it at ground level - supercarblondie.com",
+    "youtube_title": "Why the Space Station Would Cross Your City in One Blink",
+    "kind": "news/science",
+    "prediction": {
+      "views": 80,
+      "reasoning": "Previous evergreen science topics severely underperformed predictions (2-3 views each), and while the tardigrade video hit 472 views showing the format can work, most videos are flopping hard with sin",
+      "confidence": "low",
+      "biggest_risk": "Channel has no established audience or algorithm trust yet",
+      "made_at": "2026-07-16T07:29+00:00"
+    },
+    "source": "Supercarblondie.com",
+    "keywords": [
+      "International Space Station",
+      "jet aircraft flying",
+      "speeding train",
+      "city skyline fast"
+    ],
+    "duration_sec": 41.6,
+    "captions": "karaoke",
+    "footage": "stock",
+    "clips": 3,
+    "script_preview": "If the Space Station flew at ground level, it would cross your entire city in the time it takes you to blink. New York to LA in ten minutes. That's 17,500 miles",
+    "preview_file": "preview/video_1.mp4",
+    "youtube_id": "m_nYb4Y_leg",
+    "upload_status": "uploaded"
+  },
+  {
+    "run_id": "20260716-073153",
+    "slot": 2,
+    "created_at": "2026-07-16T07:31:53Z",
+    "title": "Vantablack Absorbs 99.965% of Light\u2014Objects Disappear",
+    "youtube_title": "The Material That Makes 3D Objects Look Completely Flat",
+    "kind": "evergreen",
+    "prediction": {
+      "views": 80,
+      "reasoning": "Vantablack is a well-known topic in science circles (risk of saturation), and most evergreen videos are getting single-digit views except the tardigrade outlier, suggesting the channel hasn't found it",
+      "confidence": "low",
+      "biggest_risk": "Topic fatigue\u2014Vantablack videos are everywhere",
+      "made_at": "2026-07-16T07:31+00:00"
+    },
+    "source": "evergreen/engineering",
+    "keywords": [
+      "carbon nanotubes microscope",
+      "black velvet fabric",
+      "laboratory coating process",
+      "matte black sculpture"
+    ],
+    "duration_sec": 51.8,
+    "captions": "karaoke",
+    "footage": "stock",
+    "clips": 3,
+    "script_preview": "Vantablack makes objects disappear. It absorbs 99.965% of light\u2014your brain cannot process what it sees. Spray it on crumpled aluminum foil and every ridge vanis",
+    "preview_file": "preview/video_2.mp4",
+    "youtube_id": "Tp-LYHoBOzo",
+    "upload_status": "uploaded"
+  },
+  {
+    "run_id": "20260716-073409",
+    "slot": 3,
+    "created_at": "2026-07-16T07:34:09Z",
+    "title": "Your Brain Deletes Memories on Purpose While You Sleep",
+    "youtube_title": "Why Your Brain Shrinks Itself While You Sleep",
+    "kind": "evergreen",
+    "prediction": {
+      "views": 8,
+      "reasoning": "The topic is solid evergreen science, but the channel has almost no established audience and 9 out of 11 past videos got single-digit views regardless of quality or topic.",
+      "confidence": "medium",
+      "biggest_risk": "Zero algorithmic momentum from previous videos",
+      "made_at": "2026-07-16T07:34+00:00"
+    },
+    "source": "evergreen/neuro",
+    "keywords": [
+      "person sleeping peacefully",
+      "tangled pruning shears",
+      "overflowing filing cabinet",
+      "brain MRI scan"
+    ],
+    "duration_sec": 54.2,
+    "captions": "karaoke",
+    "footage": "stock",
+    "clips": 3,
+    "script_preview": "Your brain shrinks itself every night while you sleep. On purpose. During sleep, your synapses\u2014the connections between brain cells\u2014actually get smaller. Up to 1",
+    "preview_file": "preview/video_3.mp4",
+    "youtube_id": "_ZsbatJOJig",
+    "upload_status": "uploaded"
   }
 ]
