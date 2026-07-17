@@ -458,5 +458,95 @@
     "preview_file": "preview/video_3.mp4",
     "youtube_id": "_ZsbatJOJig",
     "upload_status": "uploaded"
+  },
+  {
+    "run_id": "20260717-072549",
+    "slot": 1,
+    "created_at": "2026-07-17T07:25:49Z",
+    "title": "The engineers trying to save a fading Voyager had one chance to fire thrusters frozen and unused for 37 years, and when the signal finally returned they learned the impossible had worked - Space Daily",
+    "youtube_title": "Engineers Fire Thrusters Dormant for 37 Years on Dying Spacecraft",
+    "kind": "news/science",
+    "prediction": {
+      "views": 25,
+      "reasoning": "This is a 2017 story about Voyager (recognizable space topic) with decent hook structure, but past evergreen/news-science videos are catastrophically underperforming (median ~3 views), and there's no ",
+      "confidence": "low",
+      "biggest_risk": "Zero algorithmic momentum on new channel",
+      "made_at": "2026-07-17T07:25+00:00"
+    },
+    "source": "Space Daily",
+    "keywords": [
+      "spacecraft engine thrusters",
+      "mission control room",
+      "deep space probe",
+      "vintage control panels"
+    ],
+    "duration_sec": 51.6,
+    "captions": "karaoke",
+    "footage": "stock",
+    "clips": 3,
+    "script_preview": "November 2017. NASA engineers send a command to a spacecraft 13 billion miles away. Then they wait 19 hours for the signal to arrive. 19 hours for the response.",
+    "preview_file": "preview/video_1.mp4",
+    "youtube_id": "snhwj053r4o",
+    "upload_status": "uploaded"
+  },
+  {
+    "run_id": "20260717-072756",
+    "slot": 2,
+    "created_at": "2026-07-17T07:27:56Z",
+    "title": "Neutron Stars Are So Dense a Teaspoon Weighs 6 Billion Tons",
+    "youtube_title": "A Teaspoon of This Star Weighs More Than Mount Everest",
+    "kind": "evergreen",
+    "prediction": {
+      "views": 8,
+      "reasoning": "Evergreen science content is consistently failing (5 of 6 evergreen videos got single-digit views) while only the tardigrades video broke through, suggesting the channel has zero algorithmic momentum ",
+      "confidence": "medium",
+      "biggest_risk": "Channel has no established audience or algorithm trust yet",
+      "made_at": "2026-07-17T07:27+00:00"
+    },
+    "source": "evergreen/space",
+    "keywords": [
+      "collapsing building demolition",
+      "hydraulic press crushing",
+      "teaspoon pouring sugar",
+      "mountain everest peak"
+    ],
+    "duration_sec": 46.6,
+    "captions": "karaoke",
+    "footage": "stock",
+    "clips": 3,
+    "script_preview": "Drop a sugar cube of neutron star on Earth and it weighs as much as every human alive\u2014100 million tons. When giant stars collapse, gravity gets so extreme it cr",
+    "preview_file": "preview/video_2.mp4",
+    "youtube_id": "AKPdqt1kvGc",
+    "upload_status": "uploaded"
+  },
+  {
+    "run_id": "20260717-073015",
+    "slot": 3,
+    "created_at": "2026-07-17T07:30:15Z",
+    "title": "Mantis Shrimp Punch Boils Water Instantly",
+    "youtube_title": "How This Shrimp Creates Temperatures Hotter Than the Sun",
+    "kind": "evergreen",
+    "prediction": {
+      "views": 80,
+      "reasoning": "Mantis shrimp is a proven viral topic, but your evergreen science videos are performing catastrophically (averaging 3-4 views) despite strong concepts, suggesting a fundamental channel discovery probl",
+      "confidence": "low",
+      "biggest_risk": "zero distribution or algorithm trust",
+      "made_at": "2026-07-17T07:30+00:00"
+    },
+    "source": "evergreen/biology",
+    "keywords": [
+      "mantis shrimp closeup",
+      "underwater bubbles forming",
+      "high speed punch",
+      "shrimp claws striking"
+    ],
+    "duration_sec": 44.6,
+    "captions": "karaoke",
+    "footage": "stock",
+    "clips": 3,
+    "script_preview": "The mantis shrimp's punch creates temperatures hotter than the sun's surface. Underwater. With its fist. Here's how: It strikes at fifty miles per hour in three",
+    "preview_file": "preview/video_3.mp4",
+    "youtube_id": "l4_8vX6YJtQ",
+    "upload_status": "uploaded"
   }
 ]
