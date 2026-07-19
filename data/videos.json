@@ -638,5 +638,95 @@
     "preview_file": "preview/video_3.mp4",
     "youtube_id": "1gc_hLsuH3Q",
     "upload_status": "uploaded"
+  },
+  {
+    "run_id": "20260719-073341",
+    "slot": 1,
+    "created_at": "2026-07-19T07:33:41Z",
+    "title": "The longest mountain range on Earth is one almost nobody has ever seen: it winds some 65,000 km around the globe like the seam on a baseball, and more than ninety percent of it lies hidden beneath the sea - Space Daily",
+    "youtube_title": "Earth's Hidden Mountain Range Circles The Entire Planet",
+    "kind": "news/science",
+    "prediction": {
+      "views": 12,
+      "reasoning": "Past evergreen science topics averaged single-digit views despite strong hooks, and this mid-ocean ridge concept lacks the immediate 'wait, WHAT?' punch of tardigrades or Neptune diamonds\u2014it's fascina",
+      "confidence": "low",
+      "biggest_risk": "Topic feels like a textbook fact, not a viral surprise",
+      "made_at": "2026-07-19T07:33+00:00"
+    },
+    "source": "Space Daily",
+    "keywords": [
+      "underwater volcanic ridge",
+      "ocean floor mapping",
+      "submarine diving deep",
+      "baseball seam closeup"
+    ],
+    "duration_sec": 50.6,
+    "captions": "karaoke",
+    "footage": "stock",
+    "clips": 3,
+    "script_preview": "A mountain range sixty five thousand kilometers long circles the entire planet right now, and you've never seen it. The mid-ocean ridge system wraps around Eart",
+    "preview_file": "preview/video_1.mp4",
+    "youtube_id": "0BC3594zRdg",
+    "upload_status": "uploaded"
+  },
+  {
+    "run_id": "20260719-073539",
+    "slot": 2,
+    "created_at": "2026-07-19T07:35:39Z",
+    "title": "Your Stomach Acid Could Dissolve a Razor Blade in a Week",
+    "youtube_title": "Why Your Stomach Acid Doesn't Dissolve You",
+    "kind": "evergreen",
+    "prediction": {
+      "views": 80,
+      "reasoning": "Evergreen biology topic with relatable hook, but past evergreen videos are mostly flopping (7 of 8 got single-digit views), and only the tardigrade video showed traction\u2014this lacks that same novelty f",
+      "confidence": "low",
+      "biggest_risk": "topic feels familiar, not mind-blowing enough",
+      "made_at": "2026-07-19T07:35+00:00"
+    },
+    "source": "evergreen/biology",
+    "keywords": [
+      "razor blade close-up",
+      "bubbling liquid chemistry",
+      "stomach model medical",
+      "corroding metal timelapse"
+    ],
+    "duration_sec": 40.8,
+    "captions": "karaoke",
+    "footage": "stock",
+    "clips": 3,
+    "script_preview": "Your stomach acid could dissolve a razor blade in a week. But here's the crazy part: your stomach completely rebuilds itself every three to five days. Faster th",
+    "preview_file": "preview/video_2.mp4",
+    "youtube_id": "oYXj4Rt1Whs",
+    "upload_status": "uploaded"
+  },
+  {
+    "run_id": "20260719-073812",
+    "slot": 3,
+    "created_at": "2026-07-19T07:38:12Z",
+    "title": "Octopuses Have Nine Brains and Three Hearts",
+    "youtube_title": "Why Octopuses Have 9 Brains And Hate Swimming",
+    "kind": "evergreen",
+    "prediction": {
+      "views": 80,
+      "reasoning": "Octopus videos are proven clickbait topics, but your evergreen science content is consistently flopping (4 of 5 got single-digit views), and the algorithm hasn't picked up your channel yet.",
+      "confidence": "low",
+      "biggest_risk": "Channel has zero momentum; even good topics aren't getting distributed",
+      "made_at": "2026-07-19T07:38+00:00"
+    },
+    "source": "evergreen/biology",
+    "keywords": [
+      "octopus swimming underwater",
+      "octopus tentacles close-up",
+      "octopus changing color",
+      "octopus arms reaching"
+    ],
+    "duration_sec": 45.9,
+    "captions": "karaoke",
+    "footage": "stock",
+    "clips": 3,
+    "script_preview": "When an octopus swims, one of its hearts stops beating. That's why they hate swimming and crawl instead. But here's why they're even weirder. They have three he",
+    "preview_file": "preview/video_3.mp4",
+    "youtube_id": "gSNBnH9k60A",
+    "upload_status": "uploaded"
   }
 ]
