@@ -818,5 +818,95 @@
     "preview_file": "preview/video_3.mp4",
     "youtube_id": "vf7W6TU14lg",
     "upload_status": "uploaded"
+  },
+  {
+    "run_id": "20260721-074003",
+    "slot": 1,
+    "created_at": "2026-07-21T07:40:03Z",
+    "title": "A Teaspoon of Neutron Star Would Weigh 10 Million Elephants",
+    "youtube_title": "A Teaspoon of This Weighs 4 Billion Tons",
+    "kind": "evergreen",
+    "prediction": {
+      "views": 15,
+      "reasoning": "Neutron stars are compelling evergreen science, but 8 of 11 evergreen videos got \u22645 views regardless of quality, suggesting the channel is still in algorithmic cold start where topic quality doesn't m",
+      "confidence": "low",
+      "biggest_risk": "algorithmic burial during cold start",
+      "made_at": "2026-07-21T07:40+00:00"
+    },
+    "source": "evergreen/space",
+    "keywords": [
+      "elephant herd",
+      "teaspoon sugar",
+      "heavy metal sphere",
+      "industrial scale weighing"
+    ],
+    "duration_sec": 61.6,
+    "captions": "karaoke",
+    "footage": "stock",
+    "clips": 3,
+    "script_preview": "A teaspoon of neutron star weighs four billion tons. That's heavier than every human on Earth combined, in something smaller than a sugar cube. Here's why. When",
+    "preview_file": "preview/video_1.mp4",
+    "youtube_id": "bdW4pRbiGPM",
+    "upload_status": "uploaded"
+  },
+  {
+    "run_id": "20260721-074214",
+    "slot": 2,
+    "created_at": "2026-07-21T07:42:14Z",
+    "title": "When Spirit\u2019s front wheel failed on Mars, engineers drove the rover backwards and let the dead wheel scrape through the soil \u2014 accidentally uncovering bright silica that pointed to ancient hot springs or steam vents - Space Daily",
+    "youtube_title": "Mars Rover's Broken Wheel Accidentally Made Its Biggest Discovery",
+    "kind": "news/science",
+    "prediction": {
+      "views": 35,
+      "reasoning": "Evergreen space/engineering topic (good) but 'news/science' hybrid framing may dilute it, and 9 of 11 videos got \u22645 views regardless of quality due to algorithmic cold start\u2014only the tardigrade anomal",
+      "confidence": "low",
+      "biggest_risk": "algorithmic burial like 8 previous videos",
+      "made_at": "2026-07-21T07:42+00:00"
+    },
+    "source": "Space Daily",
+    "keywords": [
+      "Mars rover wheel",
+      "white mineral powder",
+      "desert soil scraping",
+      "volcanic hot springs"
+    ],
+    "duration_sec": 54.6,
+    "captions": "karaoke",
+    "footage": "stock",
+    "clips": 3,
+    "script_preview": "Mars rover's broken wheel made a bigger discovery than all its working parts combined. Spirit's front wheel died in 2006. Engineers could've given up. Instead t",
+    "preview_file": "preview/video_2.mp4",
+    "youtube_id": "i8aQauWlr-U",
+    "upload_status": "uploaded"
+  },
+  {
+    "run_id": "20260721-074353",
+    "slot": 3,
+    "created_at": "2026-07-21T07:43:53Z",
+    "title": "In 1970, Venera 7 appeared to fall silent when it hit Venus, but engineers later found 23 minutes of faint radio data buried in the recording \u2014 the first transmission ever received from the surface of another planet - Space Daily",
+    "youtube_title": "We Almost Erased The First Message From Another Planet",
+    "kind": "news/science",
+    "prediction": {
+      "views": 15,
+      "reasoning": "News/science hybrid violates the evergreen-first strategy that produced the only strong performer (tardigrades), and historical space content (Neptune) completely failed with 3 views despite similar '",
+      "confidence": "low",
+      "biggest_risk": "news framing + space topic both untested/failed",
+      "made_at": "2026-07-21T07:43+00:00"
+    },
+    "source": "Space Daily",
+    "keywords": [
+      "Vintage radio equipment",
+      "Oscilloscope waveform display",
+      "Scientists examining printouts",
+      "Mission control room panels"
+    ],
+    "duration_sec": 38.0,
+    "captions": "karaoke",
+    "footage": "stock",
+    "clips": 3,
+    "script_preview": "We almost erased the first message ever sent from another planet. 1970. Soviet probe Venera 7 lands on Venus. Engineers hear 23 minutes of faint noise, dismiss ",
+    "preview_file": "preview/video_3.mp4",
+    "youtube_id": "Vb2u66Zr8wo",
+    "upload_status": "uploaded"
   }
 ]
