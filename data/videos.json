@@ -908,5 +908,95 @@
     "preview_file": "preview/video_3.mp4",
     "youtube_id": "Vb2u66Zr8wo",
     "upload_status": "uploaded"
+  },
+  {
+    "run_id": "20260722-074033",
+    "slot": 1,
+    "created_at": "2026-07-22T07:40:33Z",
+    "title": "Sharks Existed Before Trees\u2014By 50 Million Years",
+    "youtube_title": "Sharks Are 50 Million Years Older Than Trees",
+    "kind": "evergreen",
+    "prediction": {
+      "views": 35,
+      "reasoning": "Evergreen biology content aligns with channel strategy and the tardigrade success, but at n=11 with algorithm confusion from political content, most evergreen videos get 3-5 views regardless of qualit",
+      "confidence": "low",
+      "biggest_risk": "algorithm still hasn't categorized channel",
+      "made_at": "2026-07-22T07:40+00:00"
+    },
+    "source": "evergreen/biology",
+    "keywords": [
+      "shark swimming underwater",
+      "ancient tree forest",
+      "saturn planet rings",
+      "prehistoric ocean waves"
+    ],
+    "duration_sec": 51.5,
+    "captions": "karaoke",
+    "footage": "stock",
+    "clips": 3,
+    "script_preview": "Four hundred fifty million years ago, sharks were already hunting in the oceans. The land? Bare rock and moss. No trees anywhere. Trees wouldn't exist for anoth",
+    "preview_file": "preview/video_1.mp4",
+    "youtube_id": null,
+    "upload_status": "pending"
+  },
+  {
+    "run_id": "20260722-074239",
+    "slot": 2,
+    "created_at": "2026-07-22T07:42:39Z",
+    "title": "Your Eyes Have a Separate Immune System\u2014Or Your Brain Attacks Them",
+    "youtube_title": "Your Immune System Will Attack Your Eyes If It Finds Them",
+    "kind": "evergreen",
+    "prediction": {
+      "views": 25,
+      "reasoning": "Evergreen biology content with strong hook aligns with what worked (Tardigrades), but with 8 of 11 videos getting \u22645 views, algorithm likely hasn't learned the channel yet\u2014expecting typical cold-start",
+      "confidence": "low",
+      "biggest_risk": "algorithmic cold start buries it like 8 previous videos",
+      "made_at": "2026-07-22T07:42+00:00"
+    },
+    "source": "evergreen/medicine",
+    "keywords": [
+      "close-up eye iris",
+      "white blood cells microscope",
+      "brain MRI scan",
+      "immune system cells"
+    ],
+    "duration_sec": 58.4,
+    "captions": "karaoke",
+    "footage": "stock",
+    "clips": 3,
+    "script_preview": "Your immune system doesn't know your eyes exist. If it ever finds out, it will attack them. Your eyes are immune privileged. The blood vessels in your retina ha",
+    "preview_file": "preview/video_2.mp4",
+    "youtube_id": null,
+    "upload_status": "pending"
+  },
+  {
+    "run_id": "20260722-074452",
+    "slot": 3,
+    "created_at": "2026-07-22T07:44:52Z",
+    "title": "Scientists Were Wrong About Fireflies\u2019 Light. The Impact Could Ripple Across All of Science. - Yahoo",
+    "youtube_title": "Scientists Used the Wrong Number for Firefly Light for 100 Years",
+    "kind": "news/science",
+    "prediction": {
+      "views": 15,
+      "reasoning": "News/science hybrid about a scientific correction lacks the visceral 'wow' factor of tardigrades or Neptune diamonds, and the channel is still in algorithmic cold start with most evergreen videos gett",
+      "confidence": "low",
+      "biggest_risk": "Topic feels like academic trivia, not mind-blowing discovery",
+      "made_at": "2026-07-22T07:44+00:00"
+    },
+    "source": "Popular Mechanics",
+    "keywords": [
+      "fireflies glowing night",
+      "scientist with microscope",
+      "laboratory glass equipment",
+      "handwritten scientific notes"
+    ],
+    "duration_sec": 55.8,
+    "captions": "karaoke",
+    "footage": "stock",
+    "clips": 3,
+    "script_preview": "For over a century, we've been using the wrong number for how bright fireflies glow. And it might have thrown off thousands of experiments. Researchers recently",
+    "preview_file": "preview/video_3.mp4",
+    "youtube_id": null,
+    "upload_status": "pending"
   }
 ]
