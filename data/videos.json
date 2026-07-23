@@ -998,5 +998,95 @@
     "preview_file": "preview/video_3.mp4",
     "youtube_id": null,
     "upload_status": "pending"
+  },
+  {
+    "run_id": "20260723-074028",
+    "slot": 1,
+    "created_at": "2026-07-23T07:40:28Z",
+    "title": "The Mantis Shrimp Sees Colors Humans Can't Even Imagine",
+    "youtube_title": "Why Mantis Shrimp See Fewer Colors With More Eye Receptors",
+    "kind": "evergreen",
+    "prediction": {
+      "views": 35,
+      "reasoning": "Evergreen biology with counterintuitive hook matches the one proven winner (tardigrades), but algorithm still doesn't understand the channel and 8 of 11 videos died at <6 views regardless of quality.",
+      "confidence": "low",
+      "biggest_risk": "algorithmic burial during cold start",
+      "made_at": "2026-07-23T07:40+00:00"
+    },
+    "source": "evergreen/biology",
+    "keywords": [
+      "mantis shrimp closeup",
+      "coral reef underwater",
+      "prism light refraction",
+      "polarized light filter"
+    ],
+    "duration_sec": 50.1,
+    "captions": "karaoke",
+    "footage": "stock",
+    "clips": 3,
+    "script_preview": "Mantis shrimp have sixteen color receptors. Humans have three. So they must see way more colors than us, right? Wrong. Tests show they're actually worse at tell",
+    "preview_file": "preview/video_1.mp4",
+    "youtube_id": null,
+    "upload_status": "pending"
+  },
+  {
+    "run_id": "20260723-074256",
+    "slot": 2,
+    "created_at": "2026-07-23T07:42:56Z",
+    "title": "\"I didn\u2019t know what I was looking at\": drone films one of the strangest and rarest animals on the planet - BBC Wildlife Magazine",
+    "youtube_title": "Drone captures rare creature that's half stingray, half shark",
+    "kind": "news/science",
+    "prediction": {
+      "views": 25,
+      "reasoning": "News/hybrid content (not pure evergreen) plus 'rare creature' framing lacks the concrete mind-blowing fact that made Tardigrades work; wedgefish aren't culturally recognized like tardigrades, and at n",
+      "confidence": "low",
+      "biggest_risk": "News framing kills retention like Bangkok fire",
+      "made_at": "2026-07-23T07:42+00:00"
+    },
+    "source": "Discoverwildlife.com",
+    "keywords": [
+      "wedgefish underwater",
+      "drone ocean aerial",
+      "stingray swimming",
+      "shark bay australia"
+    ],
+    "duration_sec": 56.0,
+    "captions": "karaoke",
+    "footage": "stock",
+    "clips": 3,
+    "script_preview": "A drone just filmed a wedgefish\u2014one of the rarest animals on Earth. It has the flat body of a stingray but swims with the tail of a shark. Wedgefish belong to t",
+    "preview_file": "preview/video_2.mp4",
+    "youtube_id": null,
+    "upload_status": "pending"
+  },
+  {
+    "run_id": "20260723-074511",
+    "slot": 3,
+    "created_at": "2026-07-23T07:45:11Z",
+    "title": "One Lightning Bolt Contains Enough Energy to Toast 100,000 Slices of Bread",
+    "youtube_title": "How Much Energy Is Actually in a Lightning Bolt?",
+    "kind": "evergreen",
+    "prediction": {
+      "views": 8,
+      "reasoning": "Evergreen science topic with concrete numbers aligns with strategy, but the channel is still in algorithmic cold start with 8 of 11 videos getting \u22645 views, and even the successful tardigrade video (5",
+      "confidence": "low",
+      "biggest_risk": "algorithmic burial during cold start",
+      "made_at": "2026-07-23T07:45+00:00"
+    },
+    "source": "evergreen/physics",
+    "keywords": [
+      "lightning storm clouds",
+      "toaster bread popping",
+      "electrical sparks closeup",
+      "sun surface telescope"
+    ],
+    "duration_sec": 56.1,
+    "captions": "karaoke",
+    "footage": "stock",
+    "clips": 3,
+    "script_preview": "A lightning bolt carries roughly 250 million joules of energy. Enough to toast 100,000 slices of bread. So why can't we harvest it? First, most energy never rea",
+    "preview_file": "preview/video_3.mp4",
+    "youtube_id": null,
+    "upload_status": "pending"
   }
 ]
