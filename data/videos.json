@@ -1088,5 +1088,95 @@
     "preview_file": "preview/video_3.mp4",
     "youtube_id": null,
     "upload_status": "pending"
+  },
+  {
+    "run_id": "20260724-073950",
+    "slot": 1,
+    "created_at": "2026-07-24T07:39:50Z",
+    "title": "A Single Bolt of Spider Silk as Thick as a Pencil Could Stop a Boeing 747",
+    "youtube_title": "Why a Pencil-Thick Spider Silk Could Stop a Plane Mid-Flight",
+    "kind": "evergreen",
+    "prediction": {
+      "views": 15,
+      "reasoning": "Evergreen biology/materials content with strong hook similar to tardigrades video, but at n=11 the algorithm still doesn't know what this channel is, and 8 of 11 videos got buried at \u22645 views regardle",
+      "confidence": "low",
+      "biggest_risk": "algorithmic cold start lottery",
+      "made_at": "2026-07-24T07:39+00:00"
+    },
+    "source": "evergreen/biology",
+    "keywords": [
+      "spider web closeup",
+      "Boeing 747 flying",
+      "steel cable tension",
+      "pencil macro shot"
+    ],
+    "duration_sec": 62.0,
+    "captions": "karaoke",
+    "footage": "stock",
+    "clips": 3,
+    "script_preview": "A strand of spider silk as thick as a pencil has the tensile strength to stop a Boeing 747. Here's why. Spider silk is stronger than steel by weight, but streng",
+    "preview_file": "preview/video_1.mp4",
+    "youtube_id": null,
+    "upload_status": "pending"
+  },
+  {
+    "run_id": "20260724-074216",
+    "slot": 2,
+    "created_at": "2026-07-24T07:42:16Z",
+    "title": "A Day on Mercury Has Two Sunrises\u2014The Sun Reverses Direction",
+    "youtube_title": "Mercury's Sun Rises Twice\u2014Then Moves Backward Mid-Morning",
+    "kind": "evergreen",
+    "prediction": {
+      "views": 25,
+      "reasoning": "Evergreen space topic aligns with niche and the 'wait, WHAT?' factor is strong, but with 8 of 11 videos getting \u22645 views, the channel is still in algorithmic cold start and hasn't established a baseli",
+      "confidence": "low",
+      "biggest_risk": "algorithmic burial during cold start",
+      "made_at": "2026-07-24T07:42+00:00"
+    },
+    "source": "evergreen/space",
+    "keywords": [
+      "sun rising horizon",
+      "time lapse sunrise",
+      "desert sun reversing",
+      "solar eclipse sequence"
+    ],
+    "duration_sec": 58.9,
+    "captions": "karaoke",
+    "footage": "stock",
+    "clips": 3,
+    "script_preview": "On Mercury, the Sun rises, stops mid-climb, moves backward across the sky, then rises again. Same morning. One sunrise becomes two. This actually happens becaus",
+    "preview_file": "preview/video_2.mp4",
+    "youtube_id": null,
+    "upload_status": "pending"
+  },
+  {
+    "run_id": "20260724-074436",
+    "slot": 3,
+    "created_at": "2026-07-24T07:44:36Z",
+    "title": "Ancient collision with the Gaia Sausage dwarf galaxy 10 billion years ago may have flipped the Milky Way by more than 90 degrees, astronomers say - The Times of India",
+    "youtube_title": "How a Dwarf Galaxy Flipped the Milky Way on Its Side",
+    "kind": "news/science",
+    "prediction": {
+      "views": 25,
+      "reasoning": "Evergreen space topic aligns with niche and tardigrades prove biology/space can work, but 'Gaia Sausage' is abstract compared to 'shot from a gun' and 8 of 11 videos got \u22645 views suggesting algorithmi",
+      "confidence": "low",
+      "biggest_risk": "Abstract concept, no visceral hook",
+      "made_at": "2026-07-24T07:44+00:00"
+    },
+    "source": "The Times of India",
+    "keywords": [
+      "galaxy spiral arms",
+      "stars colliding simulation",
+      "telescope observatory dome",
+      "spinning gyroscope motion"
+    ],
+    "duration_sec": 55.5,
+    "captions": "karaoke",
+    "footage": "stock",
+    "clips": 3,
+    "script_preview": "A dwarf galaxy may have knocked the Milky Way onto its side. Ten billion years ago, something called the Gaia Sausage galaxy crashed into ours. Astronomers now ",
+    "preview_file": "preview/video_3.mp4",
+    "youtube_id": null,
+    "upload_status": "pending"
   }
 ]
